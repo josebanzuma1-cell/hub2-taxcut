@@ -1,0 +1,52 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE } from '../lib/site';
+const title = `Terms of Use | ${SITE.name}`;
+const description = 'Terms governing use of the calculators and content on this site.';
+const canonical = '/terms';
+const updated = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+---
+<BaseLayout {title} {description} {canonical}>
+  <div class="page-band"><div class="page">
+    <div class="tool-hero"><h1>Terms of use</h1><p>Last updated {updated}.</p></div>
+  </div></div>
+  <div class="page"><section class="prose">
+    <h2>Not tax advice</h2>
+    <p>
+      Everything here is general information and estimation tooling. It is not
+      tax, legal, accounting or financial advice, and using it creates no
+      professional relationship. We are not accountants, enrolled agents or tax
+      attorneys.
+    </p>
+    <p>
+      Decisions about withholding, estimated payments or a return should be made
+      with a qualified professional who knows your circumstances and can see
+      your actual documents.
+    </p>
+
+    <h2>Accuracy</h2>
+    <p>
+      Tax parameters change annually, vary by locality, and are explicitly
+      marked as unverified on this site. Calculators produce estimates from the
+      assumptions you supply and from defaults that may be out of date or
+      inapplicable to you. Your actual liability will differ. Verify anything
+      you intend to act on against IRS and state department of revenue
+      publications.
+    </p>
+    <p>
+      We make no warranty that the content is accurate, current or complete, and
+      we accept no liability for any loss, penalty or interest arising from
+      reliance on it.
+    </p>
+
+    <h2>Acceptable use</h2>
+    <p>
+      You may use these tools for personal and professional purposes, including
+      sharing result links. You may not scrape the site at volume, republish its
+      content wholesale, or present its output as your own product.
+    </p>
+
+    <h2>Changes</h2>
+    <p>These terms may be updated at any time. Continued use constitutes acceptance of the current version.</p>
+  </section></div>
+</BaseLayout>

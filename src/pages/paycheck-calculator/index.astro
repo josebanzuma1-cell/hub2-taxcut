@@ -1,0 +1,51 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SITE } from '../../lib/site';
+import { STATE_TAX } from '@data/states-tax';
+
+const title = `Paycheck Calculator by State | ${SITE.name}`;
+const description = 'Take-home pay calculators for all 50 states and DC, with each state’s income tax structure.';
+const canonical = '/paycheck-calculator';
+
+const rank = (s: typeof STATE_TAX[number]) =>
+  s.kind === 'none' ? 0 : s.kind === 'flat' ? (s.flatRate ?? 0) : Math.max(...(s.brackets ?? []).map((b) => b.rate));
+const sorted = [...STATE_TAX].sort((a, b) => rank(b) - rank(a));
+---
+<BaseLayout {title} {description} {canonical}>
+  <div class="page-band">
+    <div class="page">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Home</a><span aria-hidden="true">/</span><span aria-current="page">By state</span>
+      </nav>
+      <div class="tool-hero">
+        <h1>Paycheck calculator by state</h1>
+        <p>
+          Ranked by top marginal income tax rate. Nine states tax no wage income
+          at all; twelve apply a single flat rate; the rest run brackets.
+        </p>
+      </div>
+    </div>
+  </div>
+  <div class="page">
+    <div class="table-wrap">
+      <table class="data">
+        <thead><tr><th>State</th><th>Structure</th><th>Top rate</th><th>Local tax</th></tr></thead>
+        <tbody>
+          {sorted.map((s) => (
+            <tr>
+              <td><a href={`/paycheck-calculator/${s.slug}`}>{s.name}</a></td>
+              <td style="text-transform:capitalize">{s.kind === 'none' ? 'No income tax' : s.kind}</td>
+              <td>{s.kind === 'none' ? '—' : `${rank(s)}%`}</td>
+              <td>{s.localTax ? 'Yes' : '—'}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+    <p class="note note--warn" style="margin-top:var(--s-4)">
+      <strong class="note__title">Unverified estimates</strong>
+      Seeded figures pending verification against each state's department of
+      revenue. Local income taxes are listed but not calculated.
+    </p>
+  </div>
+</BaseLayout>

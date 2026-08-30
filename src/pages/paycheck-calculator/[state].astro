@@ -1,0 +1,158 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PaycheckTool from '../../components/PaycheckTool.astro';
+import RelatedTools from '@kit/components/RelatedTools.astro';
+import { SITE, toolsExcept } from '../../lib/site';
+import { STATE_TAX } from '@data/states-tax';
+import type { StateTax } from '@data/states-tax';
+
+export function getStaticPaths() {
+  return STATE_TAX.map((state) => ({ params: { state: state.slug }, props: { state } }));
+}
+
+interface Props { state: StateTax }
+const { state } = Astro.props;
+const canonical = `/paycheck-calculator/${state.slug}`;
+
+const noTax = state.kind === 'none';
+const isFlat = state.kind === 'flat';
+const topRate = state.kind === 'progressive'
+  ? Math.max(...(state.brackets ?? []).map((b) => b.rate))
+  : state.flatRate ?? 0;
+
+const title = noTax
+  ? `${state.name} Paycheck Calculator — No State Income Tax | ${SITE.name}`
+  : `${state.name} Paycheck Calculator — Take-Home Pay | ${SITE.name}`;
+const description = noTax
+  ? `Work out take-home pay in ${state.name}. The state charges no income tax on wages, so only federal and FICA are withheld.`
+  : `Work out take-home pay in ${state.name}, including the state's ${isFlat ? `flat ${state.flatRate}%` : `${topRate}% top`} income tax rate, federal tax and FICA.`;
+
+const peers = STATE_TAX.filter((s) => s.kind === state.kind && s.code !== state.code).slice(0, 8);
+const noTaxStates = STATE_TAX.filter((s) => s.kind === 'none');
+const related = toolsExcept('paycheck-calculator').slice(0, 3).map((t) => ({
+  href: `/tools/${t.slug}`, title: t.title, desc: t.blurb,
+}));
+
+const schema = [{
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+    { '@type': 'ListItem', position: 2, name: 'Paycheck calculator by state', item: `${SITE.url}/paycheck-calculator` },
+    { '@type': 'ListItem', position: 3, name: state.name, item: `${SITE.url}${canonical}` },
+  ],
+}];
+---
+<BaseLayout {title} {description} {canonical} {schema}>
+  <PaycheckTool
+    state={state}
+    title={`${state.name} Paycheck Calculator`}
+    intro={noTax
+      ? `${state.name} taxes no wage income, so the only deductions from your cheque are federal tax, Social Security and Medicare. Here is what that leaves.`
+      : isFlat
+        ? `${state.name} applies a flat ${state.flatRate}% income tax, so everyone pays the same rate regardless of income. Here is what reaches your account.`
+        : `${state.name} runs progressive income tax brackets topping out at ${topRate}%. Here is what reaches your account after federal, state and FICA.`}
+    breadcrumbs={[
+      { href: '/', label: 'Home' },
+      { href: '/paycheck-calculator', label: 'By state' },
+      { label: state.name },
+    ]}
+  >
+    <section class="prose" style="margin-top:var(--s-7)">
+      <h2>Income tax in {state.name}</h2>
+      {noTax ? (
+        <>
+          <p>
+            {state.name} is one of {noTaxStates.length} states that does not tax
+            wage income. {state.note} On an $85,000 salary that is worth
+            somewhere between $3,000 and $7,000 a year compared with a
+            high-tax state — the single largest swing between two identical
+            salaries in different places.
+          </p>
+          <p>
+            It is not free money. States without an income tax raise revenue
+            elsewhere, typically through higher sales tax, higher property tax,
+            or severance taxes on resources. If you are comparing job offers
+            across state lines, compare the whole cost of living rather than the
+            withholding line alone.
+          </p>
+        </>
+      ) : isFlat ? (
+        <>
+          <p>
+            {state.name} applies a single flat rate of {state.flatRate}% to
+            taxable income. {state.note}
+          </p>
+          <p>
+            A flat rate makes the arithmetic simple but does not make the tax
+            proportional to income, because the standard deduction still shields
+            the first {state.standardDeduction.single > 0
+              ? `$${state.standardDeduction.single.toLocaleString()}`
+              : 'portion'} of earnings. Effective rates therefore still rise
+            with income, just far more gently than under a bracketed system.
+          </p>
+        </>
+      ) : (
+        <>
+          <p>
+            {state.name} uses progressive brackets, with rates from{' '}
+            {Math.min(...(state.brackets ?? []).map((b) => b.rate))}% up to{' '}
+            {topRate}%. {state.note}
+          </p>
+          <p>
+            As with federal tax, the brackets are marginal — reaching the top
+            rate does not apply it to your whole income, only to the portion
+            above the final threshold. The effective rate shown above is what
+            you actually pay across all your income.
+          </p>
+        </>
+      )}
+
+      {state.localTax && (
+        <div class="callout">
+          <strong>Local income tax applies in {state.name} and is not included above.</strong>
+          Counties or municipalities here levy their own income tax on top of
+          the state figure, commonly between 1% and 3%. Your actual take-home
+          will be lower than this calculator shows. Check with your city or
+          county before relying on the number.
+        </div>
+      )}
+
+      <h2>What else comes out</h2>
+      <p>
+        Federal income tax and FICA apply identically in every state. Social
+        Security takes 6.2% up to the annual wage base; Medicare takes 1.45%
+        with no ceiling, plus 0.9% more on high earnings. Those three are the
+        same in {state.name} as anywhere else — only the state line moves.
+      </p>
+      <p>
+        Pre-tax deductions behave differently from one another: health premiums
+        and HSA contributions cut both your income tax and your FICA, while a
+        traditional 401(k) cuts income tax only. The
+        <a href="/tools/paycheck-calculator"> full breakdown</a> explains why
+        that distinction is worth real money.
+      </p>
+    </section>
+
+    {peers.length > 0 && (
+      <section style="margin-top:var(--s-7)">
+        <div class="section-head">
+          <h2>
+            {noTax ? 'Other states with no income tax'
+              : isFlat ? 'Other flat-rate states'
+              : 'Other states with progressive brackets'}
+          </h2>
+        </div>
+        <div class="chip-row">
+          {peers.map((s) => <a class="chip" href={`/paycheck-calculator/${s.slug}`}>{s.name}</a>)}
+        </div>
+      </section>
+    )}
+
+    <RelatedTools items={related} />
+  </PaycheckTool>
+</BaseLayout>
+
+<script>
+  import '../../scripts/paycheck-island';
+</script>

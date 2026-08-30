@@ -1,0 +1,147 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PaycheckTool from '../../components/PaycheckTool.astro';
+import RelatedTools from '@kit/components/RelatedTools.astro';
+import { SITE, toolBySlug, toolsExcept } from '../../lib/site';
+import { STATE_TAX } from '@data/states-tax';
+
+const tool = toolBySlug('paycheck-calculator')!;
+const canonical = `/tools/${tool.slug}`;
+const title = `Take-Home Paycheck Calculator | ${SITE.name}`;
+const description =
+  'Work out your net pay after federal, state, Social Security, Medicare and ' +
+  'pre-tax deductions — with every line itemised rather than summed.';
+
+const schema = [{
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+    { '@type': 'ListItem', position: 2, name: 'Calculators', item: `${SITE.url}/tools` },
+    { '@type': 'ListItem', position: 3, name: tool.nav, item: `${SITE.url}${canonical}` },
+  ],
+}];
+const related = toolsExcept(tool.slug).slice(0, 3).map((t) => ({
+  href: `/tools/${t.slug}`, title: t.title, desc: t.blurb,
+}));
+const byName = [...STATE_TAX].sort((a, b) => a.name.localeCompare(b.name));
+---
+<BaseLayout {title} {description} {canonical} {schema}>
+  <PaycheckTool
+    state={null}
+    title="Take-Home Paycheck Calculator"
+    intro="Gross to net, one line at a time. Most calculators lump your deductions together; this one shows which wage base each deduction actually reduces, because they are not the same and the difference is real money."
+    breadcrumbs={[{ href: '/', label: 'Home' }, { href: '/tools', label: 'Calculators' }, { label: tool.nav }]}
+  >
+    <section style="margin-top:var(--s-7)">
+      <div class="section-head">
+        <h2>Paycheck calculator by state</h2>
+        <p>State income tax is the single biggest difference between two identical salaries. Nine states charge none at all.</p>
+      </div>
+      <div class="chip-row">
+        {byName.map((s) => <a class="chip" href={`/paycheck-calculator/${s.slug}`}>{s.name}</a>)}
+      </div>
+    </section>
+
+    <section class="prose" style="margin-top:var(--s-7)">
+      <h2>The mistake almost every paycheck calculator makes</h2>
+      <p>
+        Pre-tax deductions do not all reduce the same thing, and treating them
+        as one bucket is the most common error in this category.
+      </p>
+      <ul>
+        <li>
+          <strong>Section 125 deductions</strong> — health, dental and vision
+          premiums, FSA contributions, and HSA contributions made through
+          payroll — reduce your income-tax wages <em>and</em> your Social
+          Security and Medicare wages.
+        </li>
+        <li>
+          <strong>Traditional 401(k) contributions</strong> reduce your
+          income-tax wages only. Social Security and Medicare are still charged
+          on every dollar you contribute.
+        </li>
+      </ul>
+      <div class="callout">
+        <strong>Why it matters.</strong> If a calculator treats your 401(k) as
+        reducing FICA, it overstates your take-home by 7.65% of whatever you
+        contribute. On a $10,000 contribution that is $765 a year of money you
+        do not actually keep. The breakdown above states which base each line
+        reduces so you can check it against a real pay stub.
+      </div>
+
+      <h2>What comes out, in order</h2>
+      <h3>Pre-tax deductions</h3>
+      <p>
+        Taken first, before any tax is calculated. This is why raising your
+        401(k) contribution costs you less in take-home than the contribution
+        itself — at a 22% marginal rate, $100 into the plan costs about $78 of
+        net pay.
+      </p>
+      <h3>Federal income tax</h3>
+      <p>
+        Calculated on wages minus pre-tax deductions minus the standard
+        deduction, then run through the bracket table. Brackets are marginal:
+        moving into the 22% bracket does not tax your whole income at 22%, only
+        the portion above the threshold. Your effective rate is always lower
+        than your marginal rate, and this calculator shows both.
+      </p>
+      <h3>Social Security and Medicare</h3>
+      <p>
+        Social Security is 6.2% up to an annual wage base, after which it stops
+        for the rest of the year. Medicare is 1.45% with no cap, plus an extra
+        0.9% on wages above $200,000 for single filers or $250,000 for joint.
+        Your employer pays a matching 6.2% and 1.45% that never appears on your
+        stub — the true cost of employing you is roughly 7.65% above your gross.
+      </p>
+      <h3>State income tax</h3>
+      <p>
+        The biggest variable between two identical salaries. Nine states tax no
+        wage income at all. Twelve apply a single flat rate. The rest run
+        progressive brackets that look like the federal system but with
+        different thresholds, different standard deductions, and in a dozen
+        states an additional local income tax layered on top.
+      </p>
+
+      <h2>Where this model stops</h2>
+      <ul>
+        <li><strong>Local income tax is not calculated.</strong> A dozen states allow counties or cities to levy their own. Where that applies the page says so, and your real take-home will be lower than shown.</li>
+        <li><strong>Withholding is not the same as tax owed.</strong> This models your annual liability spread evenly. Actual withholding follows IRS tables applied to each individual paycheck, so a bonus month or an uneven schedule will differ.</li>
+        <li><strong>Credits are excluded.</strong> The child tax credit, earned income credit and education credits all reduce what you finally owe but are claimed on your return, not withheld from your cheque.</li>
+        <li><strong>Itemised deductions are excluded.</strong> This uses the standard deduction, which roughly nine in ten filers take.</li>
+      </ul>
+
+      <h2>Common questions</h2>
+      <dl class="faq">
+        <dt>Why is my real paycheck different from this?</dt>
+        <dd>
+          Usually withholding tables versus annual liability. Payroll withholds
+          from each cheque as though you earned that amount all year, so
+          irregular pay produces uneven withholding that evens out at filing.
+          Local tax and employer-specific deductions account for most of the
+          rest.
+        </dd>
+        <dt>Does a raise ever leave me worse off?</dt>
+        <dd>
+          Not through tax brackets — only the income above a threshold is taxed
+          at the higher rate. It can happen through benefit cliffs, where a
+          subsidy or credit phases out entirely at a given income, but the
+          bracket system itself never penalises earning more.
+        </dd>
+        <dt>Should I contribute more to my 401(k)?</dt>
+        <dd>
+          Capture the full employer match first — that is an immediate return
+          nothing else matches. Beyond that, drag the contribution slider and
+          watch the take-home figure: the gap between what you contribute and
+          what you lose from your cheque is your marginal rate working for you.
+        </dd>
+      </dl>
+    </section>
+
+    <RelatedTools items={related} />
+  </PaycheckTool>
+</BaseLayout>
+
+<script>
+  import '../../scripts/paycheck-island';
+</script>

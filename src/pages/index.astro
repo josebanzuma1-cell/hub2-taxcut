@@ -1,0 +1,173 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE, TOOLS, BUILT } from '../lib/site';
+import { STATE_TAX } from '@data/states-tax';
+
+const title = `${SITE.name} — ${SITE.tagline}`;
+const description = SITE.description;
+const canonical = '/';
+const TINT = ['tile--tint-1', 'tile--tint-2', 'tile--tint-3'] as const;
+
+const groups = [
+  { key: 'paycheck',  label: 'Your paycheck',   desc: 'What actually reaches your account, and what to change on the W-4 if the answer is wrong.' },
+  { key: 'business',  label: 'Self-employed',   desc: 'Quarterly estimates, self-employment tax, and where you owe sales tax.' },
+  { key: 'investing', label: 'Investments',     desc: 'What a sale costs you, before you make it.' },
+] as const;
+
+const noTaxCount = STATE_TAX.filter((s) => s.kind === 'none').length;
+const schema = [{
+  '@context': 'https://schema.org', '@type': 'ItemList',
+  itemListElement: BUILT.map((t, i) => ({
+    '@type': 'ListItem', position: i + 1, name: t.title, url: `${SITE.url}/tools/${t.slug}`,
+  })),
+}];
+---
+<BaseLayout {title} {description} {canonical} {schema}>
+  <section class="band">
+    <div class="page band__inner">
+      <h1>See where <em>every dollar</em> of your paycheck goes.</h1>
+      <p class="band__sub">
+        Federal, state, FICA and pre-tax deductions itemised line by line — not
+        lumped into one number you have to take on faith.
+      </p>
+
+      <form class="picker" id="picker" action="/tools" method="get">
+        <div class="picker__field">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <rect x="3" y="4" width="18" height="16" rx="3"/><path d="M7 9h10M7 13h4M7 17h4M15 13v4"/>
+          </svg>
+          <label class="visually-hidden" for="picker-select">Choose a calculator</label>
+          <select id="picker-select">
+            {BUILT.map((t) => <option value={`/tools/${t.slug}`}>{t.nav}</option>)}
+          </select>
+        </div>
+        <button class="picker__go" type="submit">
+          Open calculator
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </form>
+
+      <p class="band__note">Free, no sign-up. Nothing you enter is sent anywhere.</p>
+    </div>
+  </section>
+
+  <section class="trust">
+    <div class="page trust__inner">
+      <span class="trust__item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>All 50 states and DC</span>
+      <span class="trust__item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Every deduction itemised</span>
+      <span class="trust__item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Nothing leaves your browser</span>
+      <span class="trust__item"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Limits stated, not hidden</span>
+    </div>
+  </section>
+
+  {groups.filter((g) => BUILT.some((t) => t.group === g.key)).map((g, gi) => (
+    <section class={`section${gi === 1 ? ' section--tint' : ''}`}>
+      <div class="page">
+        <div class="section__head"><h2>{g.label}</h2><p>{g.desc}</p></div>
+        <div class="tiles">
+          {BUILT.filter((t) => t.group === g.key).map((t, i) => (
+            <a class={`tile ${TINT[(gi + i) % 3]}`} href={`/tools/${t.slug}`}>
+              <span class="tile__icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 17l5-5 4 3 8-8"/><path d="M21 7v5h-5"/></svg>
+              </span>
+              <span class="tile__title">{t.nav}</span>
+              <span class="tile__desc">{t.blurb}</span>
+              <span class="tile__go">Open<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  ))}
+
+  <section class="section">
+    <div class="page">
+      <div class="section__head">
+        <h2>Being built next</h2>
+        <p>Listed so the roadmap is visible rather than implied by dead links.</p>
+      </div>
+      <div class="cards">
+        {TOOLS.filter((t) => !t.built).map((t) => (
+          <div class="card" style="opacity:.72;cursor:default">
+            <span class="card__title">{t.title}</span>
+            <span class="card__desc">{t.blurb}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="page">
+      <div class="section__head">
+        <h2>Built to be checked, not believed</h2>
+        <p>Tax tools are worth exactly as much as their assumptions, so ours are on the page.</p>
+      </div>
+      <div class="benefits">
+        <div class="benefit">
+          <div class="benefit__num">01</div>
+          <h3>Deductions are not interchangeable</h3>
+          <p>
+            Health premiums cut your FICA wages; a 401(k) does not. Most
+            calculators lump them together and overstate your take-home by
+            7.65% of every dollar you contribute. Ours shows which base each
+            line reduces.
+          </p>
+        </div>
+        <div class="benefit">
+          <div class="benefit__num">02</div>
+          <h3>Marginal and effective, both shown</h3>
+          <p>
+            Your bracket is not your tax rate. We show the rate on your next
+            dollar and the rate across all of it, because confusing the two is
+            behind most bad tax decisions.
+          </p>
+        </div>
+        <div class="benefit">
+          <div class="benefit__num">03</div>
+          <h3>Limits stated on the page</h3>
+          <p>
+            Where local income tax applies, or a state's joint-filer brackets
+            are approximated, the page says so at the point you would otherwise
+            be misled.
+          </p>
+        </div>
+        <div class="benefit">
+          <div class="benefit__num">04</div>
+          <h3>Shareable by link</h3>
+          <p>
+            Your inputs are encoded in the URL. Send it to a partner or an
+            accountant and they see exactly your scenario.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--tint">
+    <div class="page">
+      <div class="section__head">
+        <h2>Paycheck calculator by state</h2>
+        <p>
+          State income tax is the largest gap between two identical salaries.
+          {noTaxCount} states charge none at all; the highest top rate is over 13%.
+        </p>
+      </div>
+      <div class="chip-row">
+        {[...STATE_TAX].sort((a, b) => a.name.localeCompare(b.name)).map((s) => (
+          <a class="chip" href={`/paycheck-calculator/${s.slug}`}>{s.name}</a>
+        ))}
+      </div>
+    </div>
+  </section>
+</BaseLayout>
+
+<script>
+  const form = document.getElementById('picker') as HTMLFormElement | null;
+  const select = document.getElementById('picker-select') as HTMLSelectElement | null;
+  form?.addEventListener('submit', (e) => {
+    if (!select?.value) return;
+    e.preventDefault();
+    location.href = select.value;
+  });
+</script>

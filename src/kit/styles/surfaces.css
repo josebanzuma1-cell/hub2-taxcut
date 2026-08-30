@@ -1,0 +1,208 @@
+/* KIT — bold surfaces: dark header, hero band, selector, trust strip, tiles.
+   These carry the visual identity; the calculator components underneath stay
+   as they were, because a results card has to read as an instrument, not a
+   marketing panel. */
+
+/* ---------- dark header ---------- */
+.site-header--deep {
+  background: var(--c-deep);
+  border-bottom: 0;
+}
+.site-header--deep .brand { color: #fff; }
+.site-header--deep .brand:hover { color: #fff; }
+.site-header--deep .nav a { color: var(--c-on-deep-dim); }
+.site-header--deep .nav a:hover,
+.site-header--deep .nav a[aria-current='page'] { color: var(--c-pop); }
+.site-header--deep .site-header__inner { min-height: 66px; }
+
+.header-cta {
+  display: none; align-items: center; gap: var(--s-2);
+  background: var(--c-pop); color: var(--c-pop-ink);
+  font-size: var(--t-sm); font-weight: 640; text-decoration: none;
+  padding: 0 var(--s-4); height: 38px; border-radius: var(--r-full);
+  transition: background .12s ease;
+}
+.header-cta:hover { background: var(--c-pop-2); color: var(--c-pop-ink); }
+@media (min-width: 900px) { .header-cta { display: inline-flex; } }
+
+/* ---------- hero band ---------- */
+.band {
+  background: var(--c-deep);
+  color: var(--c-on-deep);
+  padding-block: var(--s-8) var(--s-7);
+  position: relative;
+  overflow: hidden;
+}
+/* Soft concentric rings, echoing the pattern comparison sites use to stop a
+   large flat colour block reading as dead space. Pure CSS, no image request. */
+.band::before {
+  content: ''; position: absolute; inset: 0;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255,194,71,.09) 0 22%, transparent 22.5%),
+    radial-gradient(circle at 88% 82%, rgba(255,194,71,.07) 0 26%, transparent 26.5%),
+    radial-gradient(circle at 72% 8%,  rgba(255,255,255,.04) 0 14%, transparent 14.5%);
+  pointer-events: none;
+}
+.band > * { position: relative; }
+
+.band__inner { text-align: center; max-width: 46rem; margin-inline: auto; }
+.band h1 {
+  font-size: clamp(2.1rem, 5.2vw, 3.6rem);
+  letter-spacing: -0.035em; line-height: 1.06; color: #fff;
+}
+.band h1 em { font-style: normal; color: var(--c-pop); }
+.band__sub {
+  margin-top: var(--s-4); font-size: var(--t-md);
+  color: var(--c-on-deep-dim); max-width: 40rem; margin-inline: auto;
+}
+
+/* ---------- hero selector: picker + CTA, as one pill on desktop ---------- */
+.picker {
+  display: flex; flex-direction: column; gap: var(--s-3);
+  margin-top: var(--s-6); max-width: 34rem; margin-inline: auto;
+}
+@media (min-width: 640px) { .picker { flex-direction: row; align-items: stretch; } }
+
+.picker__field {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: var(--s-3);
+  background: #fff; border-radius: var(--r-full);
+  padding: 0 var(--s-3) 0 var(--s-5); height: 60px;
+  box-shadow: var(--shadow-lift);
+}
+.picker__field svg { color: var(--c-accent); flex: none; }
+.picker__field select {
+  flex: 1; min-width: 0; text-overflow: ellipsis; white-space: nowrap; overflow: hidden;
+  border: 0; background: none; font: inherit; font-size: var(--t-base);
+  font-weight: 560; color: var(--c-ink); height: 100%; cursor: pointer;
+  appearance: none; -webkit-appearance: none; padding-right: var(--s-5);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%23767c86' stroke-width='1.7' stroke-linecap='round'%3E%3Cpath d='M1.5 1.75 6 6.25l4.5-4.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 4px center; background-size: 12px 8px;
+}
+.picker__field select:focus { outline: none; }
+.picker__field:focus-within { box-shadow: 0 0 0 3px var(--c-pop), var(--shadow-lift); }
+
+.picker__go {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+  background: var(--c-pop); color: var(--c-pop-ink);
+  border: 0; border-radius: var(--r-full); height: 60px; padding-inline: var(--s-6);
+  font: inherit; font-size: var(--t-md); font-weight: 660; letter-spacing: -0.01em;
+  cursor: pointer; white-space: nowrap; transition: background .12s ease, transform .1s ease;
+}
+.picker__go:hover { background: var(--c-pop-2); }
+.picker__go:active { transform: translateY(1px); }
+
+.band__note {
+  margin-top: var(--s-4); font-size: var(--t-sm); color: var(--c-on-deep-dim);
+}
+.band__note a { color: var(--c-pop); text-decoration-color: rgba(255,194,71,.45); }
+
+/* ---------- trust strip ----------
+   Verifiable properties of the product only. No ratings, no review counts,
+   no testimonials — inventing social proof is how these sites lose trust. */
+.trust {
+  background: var(--c-tint-1);
+  border-bottom: 1px solid var(--c-line);
+}
+.trust__inner {
+  display: grid; gap: var(--s-3) var(--s-5); padding-block: var(--s-4);
+  grid-template-columns: repeat(2, 1fr);
+}
+@media (min-width: 860px) { .trust__inner { grid-template-columns: repeat(4, 1fr); } }
+.trust__item {
+  display: flex; align-items: center; gap: var(--s-2);
+  font-size: var(--t-sm); color: var(--c-accent); font-weight: 560;
+}
+.trust__item svg { flex: none; color: var(--c-accent-2); }
+
+/* ---------- category tiles ---------- */
+.tiles { display: grid; gap: var(--s-4); grid-template-columns: 1fr; }
+@media (min-width: 620px) { .tiles { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 980px) { .tiles { grid-template-columns: repeat(3, 1fr); } }
+
+.tile {
+  display: flex; flex-direction: column; gap: var(--s-3);
+  padding: var(--s-5); border-radius: var(--r-xl);
+  background: var(--c-surface); border: 1px solid var(--c-line);
+  text-decoration: none; color: var(--c-ink);
+  transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease;
+}
+.tile:hover {
+  transform: translateY(-3px); box-shadow: var(--shadow-lift);
+  border-color: transparent; color: var(--c-ink);
+}
+.tile--tint-1 { background: var(--c-tint-1); border-color: transparent; }
+.tile--tint-2 { background: var(--c-tint-2); border-color: transparent; }
+.tile--tint-3  { background: var(--c-tint-3);  border-color: transparent; }
+
+.tile__icon {
+  width: 46px; height: 46px; border-radius: 14px; flex: none;
+  display: grid; place-items: center;
+  background: var(--c-accent); color: #fff;
+}
+.tile__title {
+  font-size: var(--t-md); font-weight: 660; letter-spacing: -0.02em; line-height: 1.25;
+}
+.tile__desc { font-size: var(--t-sm); color: var(--c-ink-2); line-height: 1.55; flex: 1; }
+.tile__go {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: var(--t-sm); font-weight: 620; color: var(--c-accent);
+}
+.tile:hover .tile__go { gap: 10px; }
+.tile__go svg { transition: transform .14s ease; }
+
+/* ---------- benefit blocks ---------- */
+.benefits { display: grid; gap: var(--s-5); grid-template-columns: 1fr; }
+@media (min-width: 720px) { .benefits { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1040px) { .benefits { grid-template-columns: repeat(4, 1fr); } }
+.benefit__num {
+  font-size: var(--t-2xl); font-weight: 700; color: var(--c-accent);
+  letter-spacing: -0.04em; line-height: 1;
+}
+.benefit h3 { margin-top: var(--s-3); font-size: var(--t-base); }
+.benefit p { margin-top: var(--s-2); font-size: var(--t-sm); color: var(--c-ink-2); line-height: 1.6; }
+
+/* ---------- full-width section wrappers ---------- */
+.section { padding-block: var(--s-8); }
+.section--tint { background: var(--c-surface-2); }
+.section__head { max-width: 40rem; margin-bottom: var(--s-6); }
+.section__head h2 {
+  font-size: clamp(1.5rem, 3.2vw, 2.1rem); letter-spacing: -0.03em;
+}
+.section__head p { margin-top: var(--s-3); color: var(--c-ink-2); font-size: var(--t-md); }
+
+/* ---------- deep footer ---------- */
+.site-footer--deep {
+  background: var(--c-deep); color: var(--c-on-deep-dim);
+  border-top: 0; margin-top: 0;
+}
+.site-footer--deep h4 { color: #fff; }
+.site-footer--deep a { color: var(--c-on-deep-dim); }
+.site-footer--deep a:hover { color: var(--c-pop); }
+.site-footer--deep .footer-legal { border-top-color: var(--c-deep-line) !important; }
+
+/* The mark fills from --c-accent, which is the same family as the dark
+   header — invert it there so it does not disappear into the band. */
+.site-header--deep, .site-footer--deep {
+  --logo-body: #ffffff;
+  --logo-glyph: var(--c-deep);
+}
+
+/* ---------- tool page hero band ---------- */
+.tool-band {
+  background: linear-gradient(180deg, var(--c-tint-1) 0%, rgba(233,236,249,0) 100%);
+  border-bottom: 1px solid var(--c-line);
+  margin-bottom: var(--s-6);
+}
+.tool-band .tool-hero { padding-block: var(--s-5) var(--s-6); }
+.tool-band .tool-hero h1 {
+  font-size: clamp(1.9rem, 4vw, 2.9rem); max-width: 22ch;
+}
+.tool-band .breadcrumbs { padding-top: var(--s-4); }
+
+/* Index pages reuse the same band via a wrapper class. */
+.page-band {
+  background: linear-gradient(180deg, var(--c-tint-1) 0%, rgba(233,236,249,0) 100%);
+  border-bottom: 1px solid var(--c-line);
+  margin-bottom: var(--s-6);
+  padding-bottom: var(--s-2);
+}

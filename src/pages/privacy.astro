@@ -1,0 +1,46 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE } from '../lib/site';
+const title = `Privacy Policy | ${SITE.name}`;
+const description = 'What this site collects, what it does not, and why your salary never leaves your browser.';
+const canonical = '/privacy';
+const updated = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+---
+<BaseLayout {title} {description} {canonical}>
+  <div class="page-band"><div class="page">
+    <div class="tool-hero"><h1>Privacy policy</h1><p>Last updated {updated}.</p></div>
+  </div></div>
+  <div class="page"><section class="prose">
+    <h2>Your salary never reaches us</h2>
+    <p>
+      Every calculation runs entirely in your browser. Your income, deductions
+      and filing status are not transmitted to any server we control, are not
+      logged, and are not stored. There is no account and no sign-up.
+    </p>
+    <p>
+      Figures are encoded into the page URL so results can be shared. That means
+      they exist in your address bar and browser history. A link containing your
+      salary will show it to anyone you send it to — clear the inputs before
+      sharing if that matters to you.
+    </p>
+
+    <h2>Analytics</h2>
+    <p>
+      We may use privacy-respecting analytics to count page views and referrers
+      in aggregate. This does not identify individual visitors and does not
+      capture anything you type into a calculator.
+    </p>
+
+    <h2>Cookies</h2>
+    <p>This site sets no cookies of its own and serves no advertising.</p>
+
+    <h2>Your rights</h2>
+    <p>
+      Because we collect no personal information, there is nothing for us to
+      export, correct or delete.
+    </p>
+
+    <h2>Contact</h2>
+    <p>Questions about this policy can be sent through the contact details published on this site.</p>
+  </section></div>
+</BaseLayout>

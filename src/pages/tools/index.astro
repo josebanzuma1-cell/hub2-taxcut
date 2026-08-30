@@ -1,0 +1,34 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { SITE, TOOLS, BUILT } from '../../lib/site';
+const title = `All Calculators | ${SITE.name}`;
+const description = 'Every paycheck, tax and withholding calculator on the site.';
+const canonical = '/tools';
+---
+<BaseLayout {title} {description} {canonical}>
+  <div class="page-band">
+    <div class="page">
+      <nav class="breadcrumbs" aria-label="Breadcrumb">
+        <a href="/">Home</a><span aria-hidden="true">/</span><span aria-current="page">Calculators</span>
+      </nav>
+      <div class="tool-hero">
+        <h1>All calculators</h1>
+        <p>Five tools covering your paycheck, self-employment, and investment sales.</p>
+      </div>
+    </div>
+  </div>
+  <div class="page">
+    <div class="cards">
+      {BUILT.map((t) => (
+        <a class="card" href={`/tools/${t.slug}`}>
+          <span class="card__title">{t.title}</span>
+          <span class="card__desc">{t.blurb}</span>
+        </a>
+      ))}
+    </div>
+    <p class="note" style="margin-top:var(--s-6)">
+      <strong class="note__title">In progress</strong>
+      {BUILT.length} of {TOOLS.length} calculators are live: {TOOLS.filter((t) => !t.built).map((t) => t.nav).join(", ")} are still being built and are not linked anywhere until their pages exist.
+    </p>
+  </div>
+</BaseLayout>

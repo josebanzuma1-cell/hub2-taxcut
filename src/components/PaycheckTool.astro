@@ -1,0 +1,151 @@
+---
+/* The take-home calculator, shared by /tools/paycheck-calculator and every
+   /paycheck-calculator/[state] page. The state list is serialised into the
+   page so the island can build a state-aware compute() with no network call. */
+import ToolShell from '@kit/components/ToolShell.astro';
+import Field from '@kit/components/Field.astro';
+import SelectField from '@kit/components/SelectField.astro';
+import Segmented from '@kit/components/Segmented.astro';
+import Chart from '@kit/components/Chart.astro';
+import DataNote from '@kit/components/DataNote.astro';
+import { D } from '../lib/tools/paycheck';
+import { STATE_TAX } from '@data/states-tax';
+import { FEDERAL } from '@data/federal';
+import type { StateTax } from '@data/states-tax';
+
+interface Props {
+  state?: StateTax | null;
+  title: string;
+  intro: string;
+  breadcrumbs: Array<{ href?: string; label: string }>;
+}
+const { state = null, title, intro, breadcrumbs } = Astro.props;
+const stateCode = state?.code ?? (D.st as string);
+const stateOptions = [...STATE_TAX]
+  .sort((a, b) => a.name.localeCompare(b.name))
+  .map((s) => ({ value: s.code, label: s.name }));
+---
+<ToolShell {title} {intro} {breadcrumbs} calcId="pay">
+  <form slot="controls" id="pay-form">
+    <Field name="gross" label="Gross pay" affix="currency" value={D.gross} hint="per year, before anything"
+           min={0} max={10000000} step={1000}
+           slider sliderMin={20000} sliderMax={400000} sliderStep={1000} />
+
+    <div class="field-grid field-grid--2">
+      <SelectField name="freq" label="Pay frequency" value={D.freq}
+        options={[
+          { value: 'weekly', label: 'Weekly (52)' },
+          { value: 'biweekly', label: 'Every 2 weeks (26)' },
+          { value: 'semimonthly', label: 'Twice a month (24)' },
+          { value: 'monthly', label: 'Monthly (12)' },
+          { value: 'annual', label: 'Annual (1)' },
+        ]} />
+      <SelectField name="st" label="State" value={stateCode} options={stateOptions} />
+    </div>
+
+    <Segmented name="status" label="Filing status" value={D.status}
+      options={[
+        { value: 'single', label: 'Single' },
+        { value: 'married', label: 'Married' },
+        { value: 'head', label: 'Head of house' },
+      ]} />
+
+    <div class="fieldset">
+      <legend>Pre-tax deductions</legend>
+      <Field name="k401" label="401(k) contribution" affix="percent" value={D.k401}
+             hint="of gross — reduces income tax only" min={0} max={90} step={0.5}
+             slider sliderMin={0} sliderMax={30} sliderStep={0.5} />
+      <div class="field-grid field-grid--2">
+        <Field name="health" label="Health premiums" affix="currency" value={D.health} hint="per year" min={0} max={200000} step={100} />
+        <Field name="hsa" label="HSA / FSA" affix="currency" value={D.hsa} hint="per year" min={0} max={20000} step={100} />
+      </div>
+    </div>
+
+    <div class="fieldset">
+      <legend>Other</legend>
+      <div class="field-grid field-grid--2">
+        <Field name="post" label="Post-tax deductions" affix="currency" value={D.post} hint="per year" min={0} max={500000} step={100} />
+        <Field name="extra" label="Extra withholding" affix="currency" value={D.extra} hint="W-4 line 4(c), per year" min={0} max={100000} step={100} />
+      </div>
+    </div>
+  </form>
+
+  <div slot="results" class="results">
+    <div class="results__headline">
+      <div class="results__headline-label">Take-home pay, each paycheck</div>
+      <div class="results__headline-value num" data-out="netPeriod" data-fmt="currency2">—</div>
+      <div class="results__headline-sub">
+        <span data-out="netAnnual" data-fmt="currency">—</span> a year, after every deduction below.
+      </div>
+    </div>
+
+    <div class="results__grid results__grid--3">
+      <div class="stat">
+        <div class="stat__label">Federal income tax</div>
+        <div class="stat__value num" data-out="federalTax" data-fmt="currency">—</div>
+        <div class="stat__note"><span data-out="marginalFederal" data-fmt="percent0">—</span> marginal</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">Social Security</div>
+        <div class="stat__value num" data-out="socialSecurity" data-fmt="currency">—</div>
+        <div class="stat__note">6.2%</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">Medicare</div>
+        <div class="stat__value num" data-out="medicare" data-fmt="currency">—</div>
+        <div class="stat__note">1.45%</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">State income tax</div>
+        <div class="stat__value num" data-out="stateTax" data-fmt="currency">—</div>
+        <div class="stat__note" data-out="stateName">—</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">Pre-tax deductions</div>
+        <div class="stat__value num" id="pay-pretax">—</div>
+        <div class="stat__note">401(k) + premiums</div>
+      </div>
+      <div class="stat">
+        <div class="stat__label">Effective tax rate</div>
+        <div class="stat__value num" data-out="effectiveRate" data-fmt="percent1">—</div>
+        <div class="stat__note">of gross</div>
+      </div>
+    </div>
+
+    <div class="results__chart">
+      <Chart id="chart-pay" height={190} label="Where each dollar of gross goes" />
+    </div>
+
+    <div class="results__actions">
+      <button type="button" class="btn btn--primary" data-action="share">Copy shareable link</button>
+      <button type="button" class="btn" data-action="reset">Reset</button>
+    </div>
+  </div>
+
+  <div id="pay-notes" style="margin-top:var(--s-5)"></div>
+
+  <section style="margin-top:var(--s-7)">
+    <div class="section-head">
+      <h2>Full deduction stack</h2>
+      <p>Gross to net, in the order payroll actually applies it. Note which wage base each item reduces — they are not the same.</p>
+    </div>
+    <div class="table-wrap">
+      <table class="data" id="pay-table">
+        <thead><tr><th>Line</th><th>Reduces</th><th>Per paycheck</th><th>Per year</th></tr></thead>
+        <tbody><tr><td colspan="4" style="text-align:center;color:var(--c-ink-3)">Calculating…</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
+  <div style="margin-top:var(--s-5)">
+    <DataNote
+      source={`Federal figures seeded for tax year ${FEDERAL.year}; state figures seeded per state`}
+      verified={false}
+      note="Tax parameters change annually and vary by locality. Verify against IRS and state department of revenue publications before relying on any figure here."
+    />
+  </div>
+
+  <slot />
+</ToolShell>
+
+<script is:inline type="application/json" id="pay-default-state" set:html={JSON.stringify(stateCode)} />

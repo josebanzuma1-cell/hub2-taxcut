@@ -1,0 +1,95 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { SITE } from '../lib/site';
+import { FEDERAL } from '@data/federal';
+import { STATE_TAX } from '@data/states-tax';
+const title = `How We Calculate | ${SITE.name}`;
+const description = 'The formulas, tax year, data sources and known limits behind every calculator here.';
+const canonical = '/methodology';
+const approx = STATE_TAX.filter((s) => s.kind === 'progressive' && !s.mfjDoubles);
+const local = STATE_TAX.filter((s) => s.localTax);
+---
+<BaseLayout {title} {description} {canonical}>
+  <div class="page-band"><div class="page">
+    <nav class="breadcrumbs" aria-label="Breadcrumb">
+      <a href="/">Home</a><span aria-hidden="true">/</span><span aria-current="page">How we calculate</span>
+    </nav>
+    <div class="tool-hero"><h1>How we calculate</h1>
+      <p>Tax tools are worth exactly as much as their assumptions. Here are ours.</p>
+    </div>
+  </div></div>
+  <div class="page"><section class="prose">
+    <div class="note note--warn">
+      <strong class="note__title">Verification status</strong>
+      Federal and state tax parameters currently ship as seeded estimates for
+      tax year {FEDERAL.year} and are marked unverified throughout. They have not
+      been checked against IRS or state publications. Do not rely on them for a
+      filing.
+    </div>
+
+    <h2>Which wage base each deduction reduces</h2>
+    <p>
+      This is the distinction the whole paycheck model turns on, and the one
+      most calculators get wrong.
+    </p>
+    <ul>
+      <li><strong>Section 125 deductions</strong> — health, dental and vision premiums, FSA, and payroll HSA — reduce income-tax wages <em>and</em> Social Security and Medicare wages.</li>
+      <li><strong>Traditional 401(k)</strong> reduces income-tax wages only. FICA is charged on the full contribution.</li>
+    </ul>
+    <p>
+      Treating the second as though it behaved like the first overstates
+      take-home by 7.65% of the contribution.
+    </p>
+
+    <h2>Order of operations</h2>
+    <div class="formula">
+      FICA wages = gross − section 125<br />
+      Income wages = gross − section 125 − 401(k)<br />
+      Federal taxable = income wages − standard deduction<br />
+      Federal tax = progressive brackets applied to federal taxable
+    </div>
+    <p>
+      Social Security is charged at 6.2% up to the annual wage base and stops
+      thereafter. Medicare is 1.45% uncapped, plus 0.9% on wages above the
+      threshold for the filing status. State tax follows the same shape using
+      that state's own deduction and rates.
+    </p>
+
+    <h2>Known limits</h2>
+    <ul>
+      <li>
+        <strong>Local income tax is not calculated</strong> in the {local.length} states
+        that permit it ({local.map((s) => s.code).join(', ')}). Pages for those
+        states say so. Real take-home there is lower than shown.
+      </li>
+      <li>
+        <strong>Married brackets are approximated</strong> in {approx.length} states
+        ({approx.map((s) => s.code).join(', ')}) that use a separate joint-filer
+        table rather than doubling the single brackets. The single table is used
+        instead, which overstates state tax. Treat those as an upper bound.
+      </li>
+      <li>
+        <strong>Annual liability, not withholding.</strong> Payroll withholds
+        from each cheque using IRS tables as though that pay continued all year.
+        Uneven pay produces uneven withholding that reconciles at filing.
+      </li>
+      <li><strong>Credits are excluded</strong> — child tax credit, EITC and education credits are claimed on the return, not withheld.</li>
+      <li><strong>The standard deduction is assumed.</strong> Itemising is not modelled.</li>
+      <li><strong>Employer-side taxes are excluded</strong> from your figures, though the page mentions them where relevant.</li>
+    </ul>
+
+    <h2>Sources to verify against</h2>
+    <ul>
+      <li>Federal brackets and standard deduction — IRS Revenue Procedure for the tax year</li>
+      <li>Social Security wage base — Social Security Administration annual announcement</li>
+      <li>Medicare and Additional Medicare — IRS Publication 15</li>
+      <li>State rates, brackets and deductions — each state's department of revenue</li>
+    </ul>
+
+    <h2>Corrections</h2>
+    <p>
+      If a figure here disagrees with an official source, the official source is
+      right. These are estimates for orientation, not tax advice.
+    </p>
+  </section></div>
+</BaseLayout>
