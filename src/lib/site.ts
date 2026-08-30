@@ -36,28 +36,28 @@ export const TOOLS: Tool[] = [
     title: 'W-4 Withholding Calculator',
     nav: 'W-4 withholding',
     blurb: 'Why your refund is so large, and what to change on the form so it stops being an interest-free loan.',
-    planId: 12, built: false, group: 'paycheck',
+    planId: 12, built: true, group: 'paycheck',
   },
   {
     slug: 'self-employment-tax-calculator',
     title: 'Self-Employment Tax & Quarterly Estimates',
     nav: 'Quarterly taxes',
     blurb: 'SE tax, the deductible half, and what to send in each quarter to land inside the safe harbour.',
-    planId: 9, built: false, group: 'business',
+    planId: 9, built: true, group: 'business',
   },
   {
     slug: 'sales-tax-calculator',
     title: 'Sales Tax Calculator',
     nav: 'Sales tax',
     blurb: 'Combined state, county and city rates — plus the economic nexus thresholds that decide where you must register.',
-    planId: 10, built: false, group: 'business',
+    planId: 10, built: true, group: 'business',
   },
   {
     slug: 'capital-gains-tax-calculator',
     title: 'Capital Gains Tax Calculator',
     nav: 'Capital gains',
     blurb: 'Short versus long term, the bracket you actually land in, and cost-basis handling for crypto lots.',
-    planId: 11, built: false, group: 'investing',
+    planId: 11, built: true, group: 'investing',
   },
 ];
 

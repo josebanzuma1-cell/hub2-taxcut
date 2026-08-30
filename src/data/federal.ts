@@ -114,3 +114,70 @@ export function marginalRate(taxable: number, brackets: Bracket[]): number {
   }
   return brackets[brackets.length - 1].rate;
 }
+
+/* Long-term capital gains brackets. A separate rate schedule from ordinary
+   income, applied to taxable income *including* the gain — which is why a
+   large sale can push part of itself from 0% into 15%.
+
+   SEEDED AND UNVERIFIED, like everything else here. */
+export interface CapGainsYear {
+  brackets: Record<FilingStatus, Bracket[]>;
+  /** Net Investment Income Tax: 3.8% above these MAGI thresholds */
+  niitRate: number;
+  niitThreshold: Record<FilingStatus, number>;
+  /** primary residence gain exclusion under IRC §121 */
+  homeSaleExclusion: Record<FilingStatus, number>;
+  verified: boolean;
+  source: string;
+}
+
+export const CAP_GAINS: CapGainsYear = {
+  brackets: {
+    single:  [{ upTo: 48_350, rate: 0 }, { upTo: 533_400, rate: 15 }, { upTo: null, rate: 20 }],
+    married: [{ upTo: 96_700, rate: 0 }, { upTo: 600_050, rate: 15 }, { upTo: null, rate: 20 }],
+    head:    [{ upTo: 64_750, rate: 0 }, { upTo: 566_700, rate: 15 }, { upTo: null, rate: 20 }],
+  },
+  niitRate: 3.8,
+  niitThreshold: { single: 200_000, married: 250_000, head: 200_000 },
+  homeSaleExclusion: { single: 250_000, married: 500_000, head: 250_000 },
+  verified: false,
+  source: 'seeded estimate for tax year 2025 — unverified',
+};
+
+/* Credits used by the W-4 model. */
+export const CREDITS = {
+  childTaxCredit: 2_000,
+  otherDependentCredit: 500,
+  /** credit phases out above this MAGI */
+  phaseOutStart: { single: 200_000, married: 400_000, head: 200_000 } as Record<FilingStatus, number>,
+  verified: false,
+  source: 'seeded estimate for tax year 2025 — unverified',
+} as const;
+
+/* Self-employment tax constants. */
+export const SE_TAX = {
+  /** net earnings multiplier — the employer-half deduction built into the base */
+  netEarningsRate: 92.35,
+  socialSecurityRate: 12.4,
+  medicareRate: 2.9,
+  additionalMedicareRate: 0.9,
+  /** half of SE tax is deductible against income tax */
+  deductibleShare: 50,
+  verified: false,
+  source: 'seeded estimate — unverified',
+} as const;
+
+/** Rate that applies to the marginal dollar of long-term gain. */
+export function capGainsRate(taxableIncludingGain: number, status: FilingStatus): number {
+  return marginalRate(taxableIncludingGain, CAP_GAINS.brackets[status]);
+}
+
+/** Long-term gain stacks on top of ordinary income, so only the portion of the
+ *  gain sitting above each threshold is taxed at the higher rate. */
+export function longTermGainsTax(ordinaryTaxable: number, gain: number, status: FilingStatus): number {
+  if (gain <= 0) return 0;
+  const brackets = CAP_GAINS.brackets[status];
+  const below = taxFromBrackets(ordinaryTaxable, brackets);
+  const withGain = taxFromBrackets(ordinaryTaxable + gain, brackets);
+  return Math.max(0, withGain - below);
+}

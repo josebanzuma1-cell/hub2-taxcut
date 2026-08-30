@@ -1,0 +1,307 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ToolShell from '@kit/components/ToolShell.astro';
+import Field from '@kit/components/Field.astro';
+import SelectField from '@kit/components/SelectField.astro';
+import Segmented from '@kit/components/Segmented.astro';
+import Chart from '@kit/components/Chart.astro';
+import DataNote from '@kit/components/DataNote.astro';
+import RelatedTools from '@kit/components/RelatedTools.astro';
+import { SITE, toolBySlug, toolsExcept } from '../../lib/site';
+import { D } from '../../lib/tools/w4';
+
+const tool = toolBySlug('w4-withholding-calculator')!;
+const canonical = `/tools/${tool.slug}`;
+const title = `W-4 Withholding Calculator — Why Is My Refund So Big? | ${SITE.name}`;
+const description =
+  'Compare what will be withheld this year against what you will actually owe, ' +
+  'and see exactly what to change on the W-4 to stop over-withholding.';
+const schema = [{
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+    { '@type': 'ListItem', position: 2, name: 'Calculators', item: `${SITE.url}/tools` },
+    { '@type': 'ListItem', position: 3, name: tool.nav, item: `${SITE.url}${canonical}` },
+  ],
+}];
+const related = toolsExcept(tool.slug).slice(0, 3).map((t) => ({
+  href: `/tools/${t.slug}`, title: t.title, desc: t.blurb,
+}));
+---
+<BaseLayout {title} {description} {canonical} {schema}>
+  <ToolShell
+    title="W-4 Withholding Calculator"
+    intro="A big refund is not a bonus. It is your money, returned without interest, after the government held it for up to sixteen months. This shows the gap between what you will have withheld and what you will actually owe — and which W-4 line to change."
+    breadcrumbs={[{ href: '/', label: 'Home' }, { href: '/tools', label: 'Calculators' }, { label: tool.nav }]}
+    calcId="w4"
+  >
+    <form slot="controls" id="w4-form">
+      <Field name="gross" label="Annual salary" affix="currency" value={D.gross}
+             min={0} max={10000000} step={1000}
+             slider sliderMin={20000} sliderMax={400000} sliderStep={1000} />
+      <div class="field-grid field-grid--2">
+        <SelectField name="freq" label="Pay frequency" value={D.freq}
+          options={[
+            { value: 'weekly', label: 'Weekly (52)' },
+            { value: 'biweekly', label: 'Every 2 weeks (26)' },
+            { value: 'semimonthly', label: 'Twice a month (24)' },
+            { value: 'monthly', label: 'Monthly (12)' },
+          ]} />
+        <Field name="k401" label="401(k)" affix="percent" value={D.k401} hint="of gross" min={0} max={90} step={0.5} />
+      </div>
+      <Segmented name="status" label="Filing status" value={D.status}
+        options={[{ value: 'single', label: 'Single' }, { value: 'married', label: 'Married' }, { value: 'head', label: 'Head of house' }]} />
+
+      <div class="fieldset">
+        <legend>Dependants — W-4 step 3</legend>
+        <div class="field-grid field-grid--2">
+          <Field name="kids" label="Children under 17" value={D.kids} hint="$2,000 credit each" min={0} max={20} step={1} />
+          <Field name="deps" label="Other dependants" value={D.deps} hint="$500 credit each" min={0} max={20} step={1} />
+        </div>
+      </div>
+
+      <div class="fieldset">
+        <legend>Adjustments — W-4 step 4</legend>
+        <div class="field-grid field-grid--2">
+          <Field name="other" label="Other income" affix="currency" value={D.other} hint="4(a) — interest, side work" min={0} max={10000000} step={500} />
+          <Field name="ded" label="Deductions over standard" affix="currency" value={D.ded} hint="4(b)" min={0} max={1000000} step={500} />
+        </div>
+        <Field name="extra" label="Extra withholding" affix="currency" value={D.extra} hint="4(c) — per year" min={0} max={100000} step={100} />
+      </div>
+
+      <div class="fieldset">
+        <legend>Optional</legend>
+        <Field name="held" label="Federal tax withheld so far this year" affix="currency" value={D.held}
+               hint="from a recent pay stub, annualised — leave 0 to assume the default W-4"
+               min={0} max={1000000} step={100} />
+      </div>
+    </form>
+
+    <div slot="results" class="results">
+      <div class="results__headline">
+        <div class="results__headline-label" id="w4-label">Projected refund</div>
+        <div class="results__headline-value num" data-out="difference" data-fmt="currency">—</div>
+        <div class="results__headline-sub" id="w4-sub">The gap between what is withheld and what you owe.</div>
+      </div>
+      <div class="results__grid results__grid--3">
+        <div class="stat">
+          <div class="stat__label">Tax you will owe</div>
+          <div class="stat__value num" data-out="liability" data-fmt="currency">—</div>
+          <div class="stat__note">after credits</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Tax withheld</div>
+          <div class="stat__value num" data-out="withheldAnnual" data-fmt="currency">—</div>
+          <div class="stat__note"><span data-out="withheldPerPeriod" data-fmt="currency">—</span> per cheque</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Credits</div>
+          <div class="stat__value num" data-out="credits" data-fmt="currency">—</div>
+          <div class="stat__note">child &amp; dependant</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Per paycheck</div>
+          <div class="stat__value num" data-out="perPaycheckSwing" data-fmt="currency2">—</div>
+          <div class="stat__note">what fixing this is worth</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Interest forgone</div>
+          <div class="stat__value num" data-out="lostInterest" data-fmt="currency">—</div>
+          <div class="stat__note">at 4% on the balance</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Effective rate</div>
+          <div class="stat__value num" data-out="effectiveRate" data-fmt="percent1">—</div>
+          <div class="stat__note"><span data-out="marginalRate" data-fmt="percent0">—</span> marginal</div>
+        </div>
+      </div>
+      <div class="results__chart">
+        <Chart id="chart-w4" height={180} label="Withheld vs owed" />
+      </div>
+      <div class="results__actions">
+        <button type="button" class="btn btn--primary" data-action="share">Copy shareable link</button>
+        <button type="button" class="btn" data-action="reset">Reset</button>
+      </div>
+    </div>
+
+    <div id="w4-notes" style="margin-top:var(--s-5)"></div>
+
+    <div style="margin-top:var(--s-5)">
+      <DataNote source="Federal brackets and credit amounts seeded for tax year 2025" verified={false}
+                note="This models annual liability, not the IRS percentage-method tables your employer actually uses per cheque. Use the IRS Tax Withholding Estimator before submitting a new W-4." />
+    </div>
+
+    <section class="prose" style="margin-top:var(--s-7)">
+      <h2>Why your refund is so large</h2>
+      <p>
+        The most common cause is the simplest: the W-4 on file does not mention
+        your dependants. Step 3 of the form is where you claim the child tax
+        credit and the credit for other dependants, and it reduces withholding
+        directly — $2,000 per qualifying child, spread across your paychecks.
+      </p>
+      <p>
+        Leave it blank and your employer withholds as though those credits do
+        not exist. You still get them, but only when you file, as a lump sum in
+        the following spring. Two children means roughly $4,000 withheld through
+        the year that was never owed — about $154 out of every fortnightly
+        cheque.
+      </p>
+      <div class="callout">
+        <strong>A refund is a receipt, not a reward.</strong> It is the exact
+        amount you overpaid, returned without interest, having been unavailable
+        to you for between four and sixteen months. The figure above prices that
+        at a conservative 4%.
+      </div>
+
+      <h2>The other usual causes</h2>
+      <ul>
+        <li><strong>A mid-year job change.</strong> Each employer withholds as if their salary were your only income for the full year. Two half-years at one rate each can over-withhold substantially.</li>
+        <li><strong>A raise or a bonus.</strong> Bonuses are often withheld at a flat supplemental rate of 22%, which over-withholds if your marginal rate is lower and under-withholds if it is higher.</li>
+        <li><strong>Both spouses working.</strong> The married-filing-jointly tables assume one income. Two similar salaries each withheld on that assumption produces under-withholding, not over — which is why the form has a step 2 checkbox for exactly this case.</li>
+        <li><strong>An old W-4.</strong> The form was redesigned in 2020 and allowances no longer exist. A W-4 filed before then is being translated by your payroll system into the new system's terms, sometimes badly.</li>
+      </ul>
+
+      <h2>Which line to change</h2>
+      <p>Once you know the direction, the fix is one line:</p>
+      <ul>
+        <li><strong>Over-withholding, and you have dependants:</strong> claim them in step 3. This is the single biggest correction available and the one most often missed.</li>
+        <li><strong>Over-withholding, no dependants:</strong> you likely have deductions above the standard amount. Step 4(b) reduces withholding to reflect them.</li>
+        <li><strong>Under-withholding:</strong> step 4(c) adds a fixed amount to every cheque. The figure above converts the shortfall into a per-paycheck number you can copy straight onto the form.</li>
+        <li><strong>Two earners:</strong> tick the box in step 2 on both W-4s, or use the worksheet. Neither is optional if your incomes are similar.</li>
+      </ul>
+
+      <h2>Aiming for zero</h2>
+      <p>
+        A perfectly balanced W-4 produces neither a refund nor a bill. In
+        practice, aiming slightly toward a small refund is sensible — income is
+        rarely as predictable as a projection assumes, and the penalty for
+        under-payment is real.
+      </p>
+      <p>
+        You are safe from that penalty if you pay at least 90% of this year's
+        tax, or 100% of last year's — 110% if last year's adjusted gross income
+        exceeded $150,000. Withholding counts as paid evenly across the year no
+        matter when it happened, which makes increasing withholding in November
+        a legitimate way to fix an under-payment discovered late.
+      </p>
+
+      <h2>What this model does and does not do</h2>
+      <p>
+        It compares your projected annual liability against projected annual
+        withholding. Your employer does something different: they apply the IRS
+        percentage-method tables to each individual paycheck, as though that
+        cheque's pay continued at the same rate all year. For steady salaried
+        pay the two converge closely. For irregular pay, commissions or a
+        mid-year start, they can diverge meaningfully.
+      </p>
+      <ul>
+        <li><strong>State withholding is excluded.</strong> Most states have their own certificate, and several use the federal W-4 as a starting point. See the <a href="/tools/paycheck-calculator">paycheck calculator</a> for the state side.</li>
+        <li><strong>Credits beyond child and dependant are excluded</strong> — earned income, education and energy credits all reduce what you finally owe.</li>
+        <li><strong>The standard deduction is assumed</strong> unless you enter more in step 4(b).</li>
+        <li><strong>Self-employment income is not modelled here.</strong> Use the <a href="/tools/self-employment-tax-calculator">quarterly estimates calculator</a>, or cover it through extra withholding on 4(c).</li>
+      </ul>
+
+      <h2>Common questions</h2>
+      <dl class="faq">
+        <dt>How often can I change my W-4?</dt>
+        <dd>
+          As often as you like. Employers must apply a new one by the start of
+          the first payroll period ending 30 days after you submit it. Changing
+          it twice a year — after a raise, and again if circumstances shift — is
+          entirely normal.
+        </dd>
+        <dt>Will claiming dependants get me in trouble?</dt>
+        <dd>
+          Not if they are your dependants. Step 3 exists precisely so the credit
+          reaches you through the year rather than in a lump. What causes
+          problems is claiming credits you are not entitled to, which leaves you
+          with a bill and possibly a penalty at filing.
+        </dd>
+        <dt>Is a big refund ever a good idea?</dt>
+        <dd>
+          As a commitment device, sometimes — if the alternative is that the
+          money is spent and no savings happen at all, an interest-free loan to
+          the government is not the worst outcome. It is an expensive way to
+          save, though, and an automatic transfer on payday achieves the same
+          thing while keeping the interest and the access.
+        </dd>
+        <dt>Why did my refund shrink when my pay rose?</dt>
+        <dd>
+          Usually credit phase-outs. The child tax credit begins reducing above
+          $200,000 of income for single filers and $400,000 for joint, at $50
+          per $1,000 of excess. Crossing that line reduces credits and therefore
+          the refund, even though nothing about your dependants changed.
+        </dd>
+      </dl>
+    </section>
+
+    <RelatedTools items={related} />
+  </ToolShell>
+</BaseLayout>
+
+<script>
+  import { mount } from '@kit/calc/engine';
+  import { stackedBarChart } from '@kit/calc/chart';
+  import { currency, currency2, currencyCompact } from '@kit/calc/format';
+  import { FIELDS, compute } from '../../lib/tools/w4';
+  import type { W4Model } from '../../lib/tools/w4';
+
+  document.getElementById('w4-form')?.addEventListener('submit', (e) => e.preventDefault());
+
+  mount<W4Model>({
+    id: 'w4',
+    fields: FIELDS,
+    compute,
+    debounceMs: 80,
+    onRender(m) {
+      const label = document.getElementById('w4-label');
+      const sub = document.getElementById('w4-sub');
+      if (label) label.textContent = m.isRefund ? 'Projected refund' : m.difference < 0 ? 'Projected bill at filing' : 'Balanced';
+      if (sub) {
+        sub.textContent = m.isRefund
+          ? `Money withheld that was never owed — about ${currency2(m.perPaycheckSwing)} of every paycheck.`
+          : m.difference < 0
+            ? `You will owe this at filing — about ${currency2(m.perPaycheckSwing)} per paycheck short.`
+            : 'Withholding matches liability almost exactly.';
+      }
+
+      const el = document.getElementById('chart-w4');
+      if (el) {
+        stackedBarChart(el, {
+          groups: [
+            { label: 'Withheld', segments: [{ value: m.withheldAnnual, color: 'var(--c-series-3)', name: 'Withheld' }] },
+            { label: 'Actually owed', segments: [{ value: m.liability, color: 'var(--c-series-1)', name: 'Owed' }] },
+          ],
+          yFormat: currencyCompact,
+          height: 180,
+        });
+      }
+
+      const notes = document.getElementById('w4-notes');
+      if (!notes) return;
+      const items: string[] = [];
+
+      if (m.isRefund && m.credits > 0) {
+        items.push(`<li><strong>Claim your dependants on W-4 step 3.</strong> Enter ${currency(m.suggestedCredits)} there. Your employer is currently withholding as though these credits do not exist, which is where the refund comes from. Fixing it puts about ${currency2(m.perPaycheckSwing)} back into every paycheck.</li>`);
+      } else if (m.isRefund && m.difference > 100) {
+        items.push(`<li><strong>You are over-withholding by ${currency(m.difference)}.</strong> With no dependants to claim, the usual cause is deductions above the standard amount — step 4(b) — or an old W-4 that predates the 2020 redesign.</li>`);
+      }
+
+      if (m.difference < -100) {
+        items.push(`<li><strong>You will owe ${currency(Math.abs(m.difference))} at filing.</strong> Add ${currency2(m.suggestedExtra)} to W-4 line 4(c) to close the gap over the rest of the year. Withholding counts as paid evenly across the year regardless of when it happens, so this works even late.</li>`);
+      }
+
+      if (m.creditsPhasedOut) {
+        items.push(`<li><strong>Your credits are partly phased out.</strong> The child tax credit reduces by $50 per $1,000 of income above the threshold for your filing status, which is why the credit total is below the headline amount per child.</li>`);
+      }
+
+      if (m.isRefund && m.lostInterest > 20) {
+        items.push(`<li><strong>The refund costs you about ${currency(m.lostInterest)} in forgone interest</strong> at a conservative 4%. Not a disaster, but it is a real cost for a service you did not ask for.</li>`);
+      }
+
+      notes.innerHTML = items.length
+        ? `<div class="note${m.difference < -100 ? ' note--warn' : ''}"><strong class="note__title">What to change</strong><ul style="margin:0;padding-left:1.1rem">${items.join('')}</ul></div>`
+        : '';
+    },
+  });
+</script>

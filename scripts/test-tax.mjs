@@ -95,5 +95,137 @@ for (const s of STATE_TAX) {
 chk('all 51 states produce sane rates', bad.length ? 0 : 1, 1, 0);
 if (bad.length) console.log('      offenders:', bad.join(' '));
 
+
+// ============ Tool 9: self-employment ============
+import { makeCompute as makeSE } from '../src/lib/tools/self-employment.ts';
+import { SE_TAX, CAP_GAINS, CREDITS, longTermGainsTax } from '../src/data/federal.ts';
+const se = makeSE(STATE_TAX);
+const seBase = { profit: 90000, w2: 0, status: 'single', st: 'CA', qbi: true, prior: 0, priorAgi: 0 };
+
+const s1 = se(seBase);
+chk('SE: net earnings are 92.35% of profit', s1.netEarnings, 90000 * 0.9235);
+chk('SE: social security portion', s1.ssPortion, 90000 * 0.9235 * 0.124);
+chk('SE: medicare portion', s1.medicarePortion, 90000 * 0.9235 * 0.029);
+chk('SE: half is deductible', s1.deductibleHalf, s1.seTax / 2);
+chk('SE: quarterly is a quarter of total', s1.quarterly * 4, s1.totalTax, 0.01);
+
+// W-2 wages consume the SS wage base first.
+const s2 = se({ ...seBase, w2: 200_000 });
+chk('SE: w2 above wage base leaves no SS portion', s2.ssPortion, 0);
+chk('SE: medicare still charged', s2.medicarePortion > 0 ? 1 : 0, 1, 0);
+chk('SE: flag set when base consumed', s2.ssFullyUsedByW2 ? 1 : 0, 1, 0);
+const s3 = se({ ...seBase, w2: 150_000 });
+chk('SE: partial wage base remaining', s3.ssPortion,
+  Math.min(90000 * 0.9235, FEDERAL.fica.socialSecurityWageBase - 150_000) * 0.124);
+
+// QBI must reduce tax, and safe harbour must pick the lesser route.
+chk('SE: QBI lowers federal tax', se({ ...seBase, qbi: false }).federalTax > s1.federalTax ? 1 : 0, 1, 0);
+const sh = se({ ...seBase, prior: 8_000, priorAgi: 90_000 });
+chk('SE: safe harbour uses 100% under $150k AGI', sh.safeHarborRate, 100);
+chk('SE: safe harbour takes the lesser', sh.safeHarborTotal, Math.min(8000, sh.totalTax * 0.9), 0.01);
+const shHigh = se({ ...seBase, prior: 8_000, priorAgi: 200_000 });
+chk('SE: safe harbour uses 110% above $150k AGI', shHigh.safeHarborRate, 110);
+chk('SE: zero profit -> zero tax', se({ ...seBase, profit: 0 }).totalTax, 0);
+
+
+// ============ Tool 11: capital gains ============
+import { makeCompute as makeCG } from '../src/lib/tools/capital-gains.ts';
+const cg = makeCG(STATE_TAX);
+const cgBase = { basis: 20000, sale: 65000, income: 85000, held: 'long', status: 'single', st: 'TX', home: false, costs: 0 };
+
+const g1 = cg(cgBase);
+chk('CG: gross gain = sale - basis - costs', g1.grossGain, 45000);
+chk('CG: no state tax in TX', g1.stateGainsTax, 0);
+// ordinary taxable = 85000 - 15000 = 70000; 0% band ends at 48350, so all gain is 15%
+chk('CG: long-term stacks above ordinary income', g1.federalGainsTax, 45000 * 0.15);
+chk('CG: short-term costs more than long-term', cg({ ...cgBase, held: 'short' }).federalGainsTax > g1.federalGainsTax ? 1 : 0, 1, 0);
+chk('CG: holding a year saves money', g1.savedByHolding > 0 ? 1 : 0, 1, 0);
+
+// A gain straddling the 0% and 15% bands must not be taxed at one flat rate.
+const straddle = cg({ ...cgBase, income: 30000, basis: 0, sale: 60000 });
+const ordTaxable = 30000 - FEDERAL.single.standardDeduction;
+chk('CG: straddling gain taxed in two bands', straddle.federalGainsTax,
+  longTermGainsTax(ordTaxable, 60000, 'single'), 0.01);
+chk('CG: straddling rate is below 15%', straddle.effectiveOnGain < 15 ? 1 : 0, 1, 0);
+
+// Whole gain inside the 0% band.
+chk('CG: low income, small gain is untaxed federally', cg({ ...cgBase, income: 20000, basis: 0, sale: 5000 }).federalGainsTax, 0);
+
+// NIIT
+const cgRich = cg({ ...cgBase, income: 300000, basis: 0, sale: 100000 });
+chk('CG: NIIT applies above threshold', cgRich.niitApplies ? 1 : 0, 1, 0);
+chk('CG: NIIT is lesser of gain and excess MAGI', cgRich.niit, Math.min(100000, 300000 + 100000 - 200000) * 0.038, 0.01);
+chk('CG: no NIIT for modest income', g1.niit, 0);
+
+// Home sale exclusion
+const home = cg({ ...cgBase, basis: 200000, sale: 500000, home: true, status: 'single' });
+chk('CG: home exclusion caps at 250k single', home.exclusionApplied, 250000);
+chk('CG: only the excess is taxable', home.taxableGain, 300000 - 250000);
+chk('CG: married exclusion is 500k', cg({ ...cgBase, basis: 200000, sale: 800000, home: true, status: 'married' }).exclusionApplied, 500000);
+
+// Losses and edges
+const loss = cg({ ...cgBase, sale: 5000 });
+chk('CG: loss flagged', loss.isLoss ? 1 : 0, 1, 0);
+chk('CG: loss produces no tax', loss.totalTax, 0);
+chk('CG: selling costs reduce the gain', cg({ ...cgBase, costs: 5000 }).grossGain, 40000);
+chk('CG: state taxes gains as income', cg({ ...cgBase, st: 'CA' }).stateGainsTax > 0 ? 1 : 0, 1, 0);
+
+// ============ Tool 10: sales tax ============
+import { makeCompute as makeST } from '../src/lib/tools/sales-tax.ts';
+import { SALES_TAX } from '../src/data/sales-tax.ts';
+const stx = makeST(SALES_TAX);
+const stBase = { amount: 100, st: 'CA', mode: 'add', local: 'avg', sales: 0, txns: 0 };
+
+const t1 = stx(stBase);
+chk('ST: combined = state + local', t1.combinedRate, 7.25 + 1.60, 0.001);
+chk('ST: adding tax multiplies', t1.tax, 100 * (t1.combinedRate / 100), 0.01);
+chk('ST: total = pre-tax + tax', t1.total, t1.preTax + t1.tax, 0.01);
+
+// Removing tax must divide, not subtract. This is the classic error.
+const rem = stx({ ...stBase, amount: t1.total, mode: 'remove' });
+chk('ST: removing tax round-trips to the original', rem.preTax, 100, 0.01);
+chk('ST: removing is not naive subtraction', Math.abs(rem.tax - t1.total * (t1.combinedRate / 100)) > 0.001 ? 1 : 0, 1, 0);
+
+chk('ST: no-tax state charges nothing', stx({ ...stBase, st: 'OR' }).tax, 0);
+chk('ST: no-tax state flagged', stx({ ...stBase, st: 'OR' }).noSalesTax ? 1 : 0, 1, 0);
+chk('ST: local=none uses state rate only', stx({ ...stBase, local: 'none' }).combinedRate, 7.25, 0.001);
+chk('ST: local=max uses the ceiling', stx({ ...stBase, local: 'max' }).combinedRate, 7.25 + 4.75, 0.001);
+
+// Nexus
+chk('ST: nexus not triggered below threshold', stx({ ...stBase, sales: 50000 }).nexusTriggered ? 1 : 0, 0, 0);
+chk('ST: nexus triggered at CA threshold', stx({ ...stBase, sales: 500000 }).nexusTriggered ? 1 : 0, 1, 0);
+chk('ST: transaction test triggers where it exists', stx({ ...stBase, st: 'GA', txns: 250 }).nexusTriggered ? 1 : 0, 1, 0);
+chk('ST: transaction count irrelevant where repealed', stx({ ...stBase, st: 'CA', txns: 99999 }).nexusTriggered ? 1 : 0, 0, 0);
+chk('ST: remaining to threshold', stx({ ...stBase, sales: 400000 }).salesRemaining, 100000);
+
+// ============ Tool 12: W-4 ============
+import { compute as w4 } from '../src/lib/tools/w4.ts';
+const wBase = { gross: 85000, freq: 'biweekly', status: 'single', kids: 0, deps: 0, other: 0, ded: 0, k401: 6, held: 0, extra: 0 };
+
+const w1 = w4(wBase);
+chk('W4: no dependents means no credits', w1.credits, 0);
+chk('W4: liability equals tax before credits when none', w1.liability, w1.taxBeforeCredits, 0.01);
+chk('W4: balanced when withholding matches liability', Math.abs(w1.difference) < 0.01 ? 1 : 0, 1, 0);
+
+// The refund case: employer withholds as if no dependents, taxpayer has two kids.
+const kids = w4({ ...wBase, kids: 2 });
+chk('W4: two kids = $4,000 of credit', kids.credits, 4000);
+chk('W4: credits create a refund', kids.isRefund ? 1 : 0, 1, 0);
+chk('W4: refund equals the credits not claimed on the W-4', kids.difference, 4000, 0.01);
+chk('W4: per-paycheck swing', kids.perPaycheckSwing, 4000 / 26, 0.01);
+chk('W4: lost interest is positive when over-withheld', kids.lostInterest > 0 ? 1 : 0, 1, 0);
+chk('W4: suggested credits equal the credit total', kids.suggestedCredits, 4000);
+
+// Under-withholding suggests extra per paycheck.
+const under = w4({ ...wBase, held: 5000 });
+chk('W4: under-withholding flagged', under.isRefund ? 1 : 0, 0, 0);
+chk('W4: suggested extra covers the shortfall', under.suggestedExtra * 26, Math.abs(under.difference), 0.01);
+
+// Credit phase-out
+const phased = w4({ ...wBase, gross: 250000, kids: 2 });
+chk('W4: credits phase out at high income', phased.creditsPhasedOut ? 1 : 0, 1, 0);
+chk('W4: phase-out reduces $50 per $1,000', phased.credits, Math.max(0, 4000 - Math.ceil((250000 - 250000 * 0.06 - 200000) / 1000) * 50), 1);
+chk('W4: zero income is safe', w4({ ...wBase, gross: 0 }).liability, 0);
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

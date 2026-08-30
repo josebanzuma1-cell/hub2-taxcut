@@ -1,0 +1,318 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ToolShell from '@kit/components/ToolShell.astro';
+import Field from '@kit/components/Field.astro';
+import SelectField from '@kit/components/SelectField.astro';
+import Segmented from '@kit/components/Segmented.astro';
+import Chart from '@kit/components/Chart.astro';
+import DataNote from '@kit/components/DataNote.astro';
+import RelatedTools from '@kit/components/RelatedTools.astro';
+import { SITE, toolBySlug, toolsExcept } from '../../lib/site';
+import { D } from '../../lib/tools/capital-gains';
+import { STATE_TAX } from '@data/states-tax';
+
+const tool = toolBySlug('capital-gains-tax-calculator')!;
+const canonical = `/tools/${tool.slug}`;
+const title = `Capital Gains Tax Calculator | ${SITE.name}`;
+const description =
+  'Work out tax on a sale: short versus long term, which capital gains bracket ' +
+  'the gain actually lands in, the 3.8% investment surtax, and state tax.';
+const schema = [{
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+    { '@type': 'ListItem', position: 2, name: 'Calculators', item: `${SITE.url}/tools` },
+    { '@type': 'ListItem', position: 3, name: tool.nav, item: `${SITE.url}${canonical}` },
+  ],
+}];
+const related = toolsExcept(tool.slug).slice(0, 3).map((t) => ({
+  href: `/tools/${t.slug}`, title: t.title, desc: t.blurb,
+}));
+const stateOptions = [...STATE_TAX].sort((a, b) => a.name.localeCompare(b.name))
+  .map((s) => ({ value: s.code, label: s.name }));
+---
+<BaseLayout {title} {description} {canonical} {schema}>
+  <ToolShell
+    title="Capital Gains Tax Calculator"
+    intro="A long-term gain is not taxed at one rate. It stacks on top of your income, so a single sale can straddle 0%, 15% and 20% at once. This works out where yours actually lands."
+    breadcrumbs={[{ href: '/', label: 'Home' }, { href: '/tools', label: 'Calculators' }, { label: tool.nav }]}
+    calcId="cg"
+  >
+    <form slot="controls" id="cg-form">
+      <div class="field-grid field-grid--2">
+        <Field name="basis" label="What you paid" affix="currency" value={D.basis} hint="cost basis" min={0} max={100000000} step={500} />
+        <Field name="sale" label="What you sold for" affix="currency" value={D.sale} min={0} max={100000000} step={500} />
+      </div>
+      <Field name="costs" label="Selling costs" affix="currency" value={D.costs}
+             hint="commission, fees, agent" min={0} max={10000000} step={100} />
+      <Segmented name="held" label="How long did you hold it?" value={D.held}
+        options={[{ value: 'short', label: 'Under a year' }, { value: 'long', label: 'Over a year' }]} />
+
+      <div class="fieldset">
+        <legend>Your situation</legend>
+        <Field name="income" label="Other taxable income" affix="currency" value={D.income}
+               hint="wages etc — decides your bracket" min={0} max={50000000} step={1000}
+               slider sliderMin={0} sliderMax={500000} sliderStep={1000} />
+        <div class="field-grid field-grid--2">
+          <Segmented name="status" label="Filing status" value={D.status}
+            options={[{ value: 'single', label: 'Single' }, { value: 'married', label: 'Married' }]} />
+          <SelectField name="st" label="State" value={D.st} options={stateOptions} />
+        </div>
+        <Segmented name="home" label="Was this your main home?" value={D.home ? '1' : '0'}
+          options={[{ value: '0', label: 'No' }, { value: '1', label: 'Yes — apply exclusion' }]} />
+      </div>
+    </form>
+
+    <div slot="results" class="results">
+      <div class="results__headline">
+        <div class="results__headline-label">Tax on this sale</div>
+        <div class="results__headline-value num" data-out="totalTax" data-fmt="currency">—</div>
+        <div class="results__headline-sub">
+          <span data-out="effectiveOnGain" data-fmt="percent1">—</span> of the taxable gain, all in.
+        </div>
+      </div>
+      <div class="results__grid results__grid--3">
+        <div class="stat">
+          <div class="stat__label">Gross gain</div>
+          <div class="stat__value num" data-out="grossGain" data-fmt="currency" data-sign>—</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Taxable gain</div>
+          <div class="stat__value num" data-out="taxableGain" data-fmt="currency">—</div>
+          <div class="stat__note">after any exclusion</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Federal</div>
+          <div class="stat__value num" data-out="federalGainsTax" data-fmt="currency">—</div>
+          <div class="stat__note">top rate <span data-out="gainsRate" data-fmt="percent0">—</span></div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Investment surtax</div>
+          <div class="stat__value num" data-out="niit" data-fmt="currency">—</div>
+          <div class="stat__note">NIIT, 3.8%</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">State</div>
+          <div class="stat__value num" data-out="stateGainsTax" data-fmt="currency">—</div>
+          <div class="stat__note" data-out="stateName">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">You keep</div>
+          <div class="stat__value num" data-out="netProceeds" data-fmt="currency">—</div>
+          <div class="stat__note">proceeds after tax</div>
+        </div>
+      </div>
+      <div class="results__chart">
+        <Chart id="chart-cg" height={190} label="Proceeds after tax" />
+      </div>
+      <div class="results__actions">
+        <button type="button" class="btn btn--primary" data-action="share">Copy shareable link</button>
+        <button type="button" class="btn" data-action="reset">Reset</button>
+      </div>
+    </div>
+
+    <div id="cg-notes" style="margin-top:var(--s-5)"></div>
+
+    <div style="margin-top:var(--s-5)">
+      <DataNote source="Capital gains brackets and thresholds seeded for tax year 2025" verified={false}
+                note="Rates, brackets and the residence exclusion change. Verify against IRS Publication 550 and Topic 409 before acting on a sale." />
+    </div>
+
+    <section class="prose" style="margin-top:var(--s-7)">
+      <h2>The one-year line is the whole game</h2>
+      <p>
+        Sell an asset you have held twelve months or less and the gain is
+        ordinary income, taxed at your marginal rate — up to 37%. Hold it a day
+        past a year and it becomes a long-term gain, taxed on a separate
+        schedule at 0%, 15% or 20%.
+      </p>
+      <p>
+        For someone in the 22% bracket that is a 7-point difference. On a
+        $45,000 gain it is over $3,000, for doing nothing but waiting. The
+        calculator shows both figures so the cost of selling early is explicit
+        rather than theoretical.
+      </p>
+      <div class="callout">
+        <strong>Count carefully.</strong> The holding period starts the day
+        after you acquired the asset and ends the day you sell. "More than one
+        year" means one year and one day. Selling on the anniversary itself is
+        short-term.
+      </div>
+
+      <h2>Why there is no single long-term rate</h2>
+      <p>
+        This is the part most calculators flatten and get wrong. Long-term gain
+        does not have its own independent bracket — it sits <em>on top of</em>
+        your ordinary income, and only the portion of the gain landing above
+        each threshold is taxed at the higher rate.
+      </p>
+      <p>
+        Someone with $30,000 of income and a $60,000 gain does not pay 15% on
+        all of it. Part of the gain fills the remaining space in the 0% band and
+        is taxed at nothing; the rest crosses into 15%. Their effective rate on
+        the gain comes out well under 15%. Someone with $200,000 of income and
+        the same $60,000 gain pays 15% on all of it, plus the investment surtax.
+      </p>
+      <div class="formula">
+        Tax on gain = tax(income + gain) − tax(income)
+      </div>
+      <p>
+        That is exactly how the figure above is computed, which is why changing
+        your other income moves the result even though the gain has not changed.
+      </p>
+
+      <h2>The 3.8% you may not know about</h2>
+      <p>
+        The Net Investment Income Tax adds 3.8% on top, for filers above
+        $200,000 of modified AGI (single) or $250,000 (married filing jointly).
+        It applies to the <em>lesser</em> of your net investment income or the
+        amount by which your MAGI exceeds the threshold — so a modest gain for a
+        high earner is fully exposed, while a large gain that only just pushes
+        you over is only partly exposed.
+      </p>
+      <p>
+        Those thresholds are not indexed for inflation, so the number of people
+        paying it grows every year without any law changing.
+      </p>
+
+      <h2>Selling your home</h2>
+      <p>
+        Section 121 excludes up to $250,000 of gain on a primary residence, or
+        $500,000 for a married couple filing jointly. To qualify you must have
+        owned and lived in the property for at least two of the previous five
+        years, and not have used the exclusion on another sale in the past two.
+      </p>
+      <p>
+        Two things people miss. Your basis includes capital improvements — a new
+        roof, an addition, a kitchen — which raise it and reduce the gain, so
+        keeping those receipts for decades genuinely pays. And depreciation
+        claimed while the property was rented is recaptured separately at up to
+        25%, outside the exclusion.
+      </p>
+
+      <h2>Losses</h2>
+      <p>
+        Losses offset gains of the same type first, then the other type, and up
+        to $3,000 of any remainder can offset ordinary income each year. Excess
+        losses carry forward indefinitely.
+      </p>
+      <p>
+        The trap is the wash sale rule: buy a substantially identical security
+        within 30 days before or after the loss sale and the loss is disallowed
+        for now, added to the basis of the replacement instead. It applies
+        across accounts, including a purchase in an IRA, which is where people
+        get caught.
+      </p>
+
+      <h2>What this excludes</h2>
+      <ul>
+        <li><strong>Collectibles</strong> — art, coins, precious metals — are taxed at up to 28%, not the standard long-term rates.</li>
+        <li><strong>Qualified small business stock</strong> under Section 1202, which can exclude gain entirely.</li>
+        <li><strong>Depreciation recapture</strong> on rental property, taxed at up to 25%.</li>
+        <li><strong>Carried-forward losses</strong> from earlier years.</li>
+        <li><strong>Local income tax</strong>, in states that levy it.</li>
+        <li><strong>State-specific treatment.</strong> Most states tax gains as ordinary income, which is what this assumes, but a few offer preferential rates or exclusions.</li>
+      </ul>
+
+      <h2>Common questions</h2>
+      <dl class="faq">
+        <dt>Does crypto work the same way?</dt>
+        <dd>
+          Yes — the IRS treats it as property, so the same holding period and
+          rates apply. The difficulty is basis tracking across many lots and
+          exchanges. Every trade is a disposal, including crypto-to-crypto
+          swaps, which surprises people who never converted back to dollars.
+        </dd>
+        <dt>Can I avoid the tax by reinvesting?</dt>
+        <dd>
+          Not for stocks. Reinvesting proceeds does not defer the gain — that
+          idea comes from Section 1031 exchanges, which since 2018 apply only to
+          real property held for business or investment, not to securities and
+          not to a personal residence.
+        </dd>
+        <dt>What if I gift the asset instead?</dt>
+        <dd>
+          The recipient generally takes your basis and your holding period, so
+          the gain travels with the asset rather than disappearing. Inherited
+          assets are different — they receive a stepped-up basis at the date of
+          death, which can erase decades of unrealised gain entirely.
+        </dd>
+        <dt>When is the tax actually due?</dt>
+        <dd>
+          With your return for the year of the sale, but a large gain can create
+          an estimated payment obligation for the quarter it happened in. The
+          <a href="/tools/self-employment-tax-calculator">quarterly estimates
+          calculator</a> covers the safe harbour rules that apply.
+        </dd>
+      </dl>
+    </section>
+
+    <RelatedTools items={related} />
+  </ToolShell>
+</BaseLayout>
+
+<script>
+  import { mount } from '@kit/calc/engine';
+  import { stackedBarChart } from '@kit/calc/chart';
+  import { currency, currencyCompact } from '@kit/calc/format';
+  import { FIELDS, makeCompute } from '../../lib/tools/capital-gains';
+  import type { CapGainsModel } from '../../lib/tools/capital-gains';
+  import { STATE_TAX } from '../../data/states-tax';
+
+  document.getElementById('cg-form')?.addEventListener('submit', (e) => e.preventDefault());
+
+  mount<CapGainsModel>({
+    id: 'cg',
+    fields: FIELDS,
+    compute: makeCompute(STATE_TAX),
+    debounceMs: 80,
+    onRender(m) {
+      const el = document.getElementById('chart-cg');
+      if (el) {
+        stackedBarChart(el, {
+          groups: [{
+            label: 'Sale proceeds',
+            segments: [
+              { value: Math.max(0, m.netProceeds), color: 'var(--c-series-1)', name: 'You keep' },
+              { value: m.federalGainsTax, color: 'var(--c-series-2)', name: 'Federal' },
+              { value: m.niit, color: '#8a6fb0', name: 'NIIT' },
+              { value: m.stateGainsTax, color: 'var(--c-series-3)', name: 'State' },
+              { value: m.sellingCosts, color: '#9aa3b5', name: 'Selling costs' },
+            ].filter((s) => s.value > 0),
+          }],
+          yFormat: currencyCompact,
+          height: 190,
+        });
+      }
+
+      const notes = document.getElementById('cg-notes');
+      if (!notes) return;
+      const items: string[] = [];
+
+      if (m.isLoss) {
+        items.push(`<li><strong>This is a loss, not a gain.</strong> It offsets other gains first, then up to $3,000 of ordinary income a year, with the remainder carrying forward. Watch the wash sale rule if you plan to buy back in within 30 days.</li>`);
+      } else if (m.isLong && m.savedByHolding > 0) {
+        items.push(`<li><strong>Holding past a year saved you ${currency(m.savedByHolding)}.</strong> Sold short-term, the same gain would be ordinary income at your ${m.marginalOrdinary}% marginal rate instead of the long-term schedule.</li>`);
+      } else if (!m.isLong && m.savedByHolding > 0) {
+        items.push(`<li><strong>Waiting until the one-year mark would save ${currency(m.savedByHolding)}.</strong> This gain is currently ordinary income at ${m.marginalOrdinary}%. If the sale can wait, that is the cheapest return available on this transaction.</li>`);
+      }
+
+      if (m.isLong && m.taxableGain > 0 && m.effectiveOnGain < m.gainsRate) {
+        items.push(`<li><strong>Part of this gain is taxed below the headline rate.</strong> Your top rate on it is ${m.gainsRate}%, but because the gain stacks on your other income some of it falls in a lower band — the effective rate is ${m.effectiveOnGain.toFixed(1)}%.</li>`);
+      }
+      if (m.niitApplies) {
+        items.push(`<li><strong>The 3.8% investment surtax applies.</strong> It is charged on the lesser of your investment income or the amount your MAGI exceeds the threshold — ${currency(m.niit)} here.</li>`);
+      }
+      if (m.exclusionApplied > 0) {
+        items.push(`<li><strong>${currency(m.exclusionApplied)} of gain is excluded</strong> under the primary residence rules. You must have owned and lived in the home for two of the last five years, and not used the exclusion in the past two.</li>`);
+      }
+      if (m.stateGainsTax === 0 && m.taxableGain > 0) {
+        items.push(`<li><strong>${m.stateName} does not tax this gain.</strong> Only federal tax applies.</li>`);
+      }
+
+      notes.innerHTML = items.length
+        ? `<div class="note"><strong class="note__title">What is driving this</strong><ul style="margin:0;padding-left:1.1rem">${items.join('')}</ul></div>`
+        : '';
+    },
+  });
+</script>

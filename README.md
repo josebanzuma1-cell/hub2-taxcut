@@ -18,13 +18,16 @@ npm run data:report  # verification coverage + known caveats
 
 ## What is here
 
-**Live:** the take-home paycheck calculator (plan tool 8) plus 51 state pages —
-58 pages total.
+**All five plan tools are live** (8, 9, 10, 11, 12), plus 51 state pages — 62
+pages total:
 
-**Not built yet:** W-4 withholding (12), self-employment quarterly (9), sales
-tax (10), capital gains (11). They are registered in `src/lib/site.ts` with
-`built: false`, which keeps them out of nav, tiles, the sitemap and structured
-data until their pages exist. Flip the flag when each ships.
+| Tool | Plan | What it does |
+|---|---|---|
+| Take-home paycheck | 8 | Gross to net with every deduction itemised, 51 states |
+| W-4 withholding | 12 | Withheld vs owed, and which W-4 line to change |
+| Self-employment | 9 | SE tax, deductible half, quarterly estimates, safe harbour |
+| Sales tax | 10 | Add/remove tax, plus economic nexus thresholds |
+| Capital gains | 11 | Short vs long term, bracket stacking, NIIT, home exclusion |
 
 ## The thing this hub gets right
 
@@ -67,7 +70,7 @@ src/pages/          page shells and prose
 ```
 
 Models are pure functions, so `npm test` exercises them under plain node with no
-browser. 37 checks currently, including an accounting identity that every dollar
+browser. 97 checks currently, including an accounting identity that every dollar
 of gross is accounted for, and a sweep asserting all 51 states produce sane
 rates.
 

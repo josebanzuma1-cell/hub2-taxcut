@@ -1,0 +1,289 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ToolShell from '@kit/components/ToolShell.astro';
+import Field from '@kit/components/Field.astro';
+import SelectField from '@kit/components/SelectField.astro';
+import Segmented from '@kit/components/Segmented.astro';
+import DataNote from '@kit/components/DataNote.astro';
+import RelatedTools from '@kit/components/RelatedTools.astro';
+import { SITE, toolBySlug, toolsExcept } from '../../lib/site';
+import { D } from '../../lib/tools/sales-tax';
+import { SALES_TAX } from '@data/sales-tax';
+
+const tool = toolBySlug('sales-tax-calculator')!;
+const canonical = `/tools/${tool.slug}`;
+const title = `Sales Tax Calculator & Nexus Checker | ${SITE.name}`;
+const description =
+  'Add or remove sales tax at state and local rates, and check whether your ' +
+  'sales volume has triggered economic nexus and a registration obligation.';
+const schema = [{
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+    { '@type': 'ListItem', position: 2, name: 'Calculators', item: `${SITE.url}/tools` },
+    { '@type': 'ListItem', position: 3, name: tool.nav, item: `${SITE.url}${canonical}` },
+  ],
+}];
+const related = toolsExcept(tool.slug).slice(0, 3).map((t) => ({
+  href: `/tools/${t.slug}`, title: t.title, desc: t.blurb,
+}));
+const stateOptions = [...SALES_TAX].sort((a, b) => a.name.localeCompare(b.name))
+  .map((s) => ({ value: s.code, label: s.name }));
+const ranked = [...SALES_TAX].sort((a, b) => (b.stateRate + b.avgLocalRate) - (a.stateRate + a.avgLocalRate));
+---
+<BaseLayout {title} {description} {canonical} {schema}>
+  <ToolShell
+    title="Sales Tax Calculator & Nexus Checker"
+    intro="Add tax to a price, or back it out of a tax-inclusive total — which is division, not subtraction, and the place most people go wrong. Plus the volume thresholds that decide where you have to register."
+    breadcrumbs={[{ href: '/', label: 'Home' }, { href: '/tools', label: 'Calculators' }, { label: tool.nav }]}
+    calcId="st"
+  >
+    <form slot="controls" id="st-form">
+      <Segmented name="mode" label="What are you doing?" value={D.mode}
+        options={[{ value: 'add', label: 'Add tax to a price' }, { value: 'remove', label: 'Back tax out of a total' }]} />
+      <Field name="amount" label="Amount" affix="currency" value={D.amount} min={0} max={100000000} step={1} />
+      <SelectField name="st" label="State" value={D.st} options={stateOptions} />
+      <Segmented name="local" label="Local rate to use" value={D.local}
+        options={[{ value: 'none', label: 'State only' }, { value: 'avg', label: 'Typical local' }, { value: 'max', label: 'Highest local' }]} />
+
+      <div class="fieldset">
+        <legend>Economic nexus check</legend>
+        <p style="font-size:var(--t-sm);color:var(--c-ink-3);margin-bottom:var(--s-3)">
+          Your sales into this state over the last twelve months. Leave at zero to skip.
+        </p>
+        <div class="field-grid field-grid--2">
+          <Field name="sales" label="Sales into the state" affix="currency" value={D.sales} min={0} max={1000000000} step={1000} />
+          <Field name="txns" label="Number of transactions" value={D.txns} min={0} max={10000000} step={10} />
+        </div>
+      </div>
+    </form>
+
+    <div slot="results" class="results">
+      <div class="results__headline">
+        <div class="results__headline-label" id="st-label">Sales tax</div>
+        <div class="results__headline-value num" data-out="tax" data-fmt="currency2">—</div>
+        <div class="results__headline-sub">
+          At a combined rate of <span data-out="combinedRate" data-fmt="percent">—</span> in
+          <span data-out="stateName">—</span>.
+        </div>
+      </div>
+      <div class="results__grid results__grid--3">
+        <div class="stat">
+          <div class="stat__label">Pre-tax amount</div>
+          <div class="stat__value num" data-out="preTax" data-fmt="currency2">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Tax</div>
+          <div class="stat__value num" data-out="tax" data-fmt="currency2">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Total</div>
+          <div class="stat__value num" data-out="total" data-fmt="currency2">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">State rate</div>
+          <div class="stat__value num" data-out="stateRate" data-fmt="percent">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Local added</div>
+          <div class="stat__value num" data-out="localRate" data-fmt="percent">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Range in state</div>
+          <div class="stat__value num" style="font-size:var(--t-base)">
+            <span data-out="minCombined" data-fmt="percent1">—</span>–<span data-out="maxCombined" data-fmt="percent1">—</span>
+          </div>
+        </div>
+      </div>
+      <div class="results__actions">
+        <button type="button" class="btn btn--primary" data-action="share">Copy shareable link</button>
+        <button type="button" class="btn" data-action="reset">Reset</button>
+      </div>
+    </div>
+
+    <div id="st-notes" style="margin-top:var(--s-5)"></div>
+
+    <div style="margin-top:var(--s-5)">
+      <DataNote source="State rates and nexus thresholds seeded — unverified" verified={false}
+                note="This is a state rate plus a typical local average, not a ZIP-level lookup. A single ZIP can straddle two districts. Use a rate service or the state's own lookup for a rate you will actually charge." />
+    </div>
+
+    <section style="margin-top:var(--s-7)">
+      <div class="section-head">
+        <h2>Combined rates by state</h2>
+        <p>State rate plus a typical local add-on, ranked. Nexus thresholds are the remote-seller registration triggers.</p>
+      </div>
+      <div class="table-wrap" style="max-height:520px;overflow-y:auto">
+        <table class="data">
+          <thead><tr><th>State</th><th>State</th><th>Typical local</th><th>Combined</th><th>Nexus</th></tr></thead>
+          <tbody>
+            {ranked.map((s) => (
+              <tr>
+                <td>{s.name}</td>
+                <td>{s.stateRate}%</td>
+                <td>{s.avgLocalRate}%</td>
+                <td>{(s.stateRate + s.avgLocalRate).toFixed(2)}%</td>
+                <td>
+                  {s.nexusSales === null ? '—'
+                    : `$${(s.nexusSales / 1000).toFixed(0)}k${s.nexusTransactions ? ` or ${s.nexusTransactions} txns` : ''}`}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="prose" style="margin-top:var(--s-7)">
+      <h2>Adding tax and removing tax are different sums</h2>
+      <p>
+        Adding is simple: multiply by the rate. Removing tax from a total that
+        already includes it is where people go wrong, because the obvious move —
+        multiplying the total by the rate — gives the wrong answer.
+      </p>
+      <div class="formula">
+        Adding:   total = amount × (1 + rate)<br />
+        Removing: amount = total ÷ (1 + rate)
+      </div>
+      <p>
+        At a 8.85% combined rate, $108.85 includes exactly $8.85 of tax. Multiply
+        $108.85 by 8.85% and you get $9.63 — you have applied the rate to the
+        tax as well as to the price. The error is small on a coffee and material
+        on an invoice, and it compounds across a year of bookkeeping.
+      </p>
+
+      <h2>Why we do not publish a ZIP-level rate</h2>
+      <p>
+        Combined rates are set by overlapping jurisdictions — state, county,
+        city, and special districts for transit or stadiums. A single ZIP code
+        can straddle two of them, so the "rate for a ZIP" is often two rates
+        wearing one label.
+      </p>
+      <p>
+        We show the state rate, a typical local add-on and the full range you
+        might encounter in that state, rather than a precise figure we cannot
+        stand behind. For a rate you will actually charge a customer, use the
+        state's own lookup or a commercial rate service that geocodes to the
+        rooftop.
+      </p>
+      <div class="callout">
+        <strong>Colorado deserves a specific warning.</strong> Home-rule cities
+        administer and audit their own sales tax separately from the state. It
+        is the most complex compliance environment in the country, and a state
+        average tells you very little there.
+      </div>
+
+      <h2>Economic nexus: when you must register</h2>
+      <p>
+        Before 2018 you only owed sales tax collection in states where you had a
+        physical presence. <em>South Dakota v. Wayfair</em> ended that. States
+        may now require remote sellers to register once they pass a volume
+        threshold — typically $100,000 in sales into that state over twelve
+        months.
+      </p>
+      <p>
+        Nineteen states also kept a separate transaction-count test, usually 200
+        separate sales. Where that applies, a business selling low-value items
+        can trigger an obligation on a few thousand dollars of revenue. New York
+        is the notable exception in the other direction: both tests must be met,
+        not either.
+      </p>
+      <ul>
+        <li><strong>Thresholds are per state, not national.</strong> $2m of revenue spread thinly may trigger nothing; $150k concentrated in one state triggers there.</li>
+        <li><strong>Marketplace sales usually do not count as yours.</strong> Amazon, Etsy and eBay collect and remit as marketplace facilitators, though some states still count the volume toward your threshold even when you did not collect it.</li>
+        <li><strong>Crossing the threshold is not retroactive</strong> in most states, but registration is generally required promptly afterwards, and the clock is a rolling twelve months rather than a calendar year.</li>
+        <li><strong>Physical presence still counts.</strong> An employee, an office, or inventory in a third-party warehouse creates nexus regardless of volume — which catches sellers using fulfilment networks.</li>
+      </ul>
+
+      <h2>What is taxable varies too</h2>
+      <p>
+        Rate is only half the question. States disagree fundamentally about what
+        is subject to tax: groceries are exempt in some and reduced in others,
+        clothing is exempt in Minnesota and Pennsylvania, and digital goods and
+        software-as-a-service are treated a dozen different ways. Services are
+        broadly exempt in some states and broadly taxable in others.
+      </p>
+      <p>
+        This calculator applies a rate to an amount. It does not decide whether
+        what you are selling is taxable in that state, which is a question for
+        the state's own guidance.
+      </p>
+
+      <h2>Common questions</h2>
+      <dl class="faq">
+        <dt>Which state's rate applies?</dt>
+        <dd>
+          Almost always the destination — where the buyer takes delivery.
+          A handful of states use origin sourcing for in-state sales, and a few
+          more apply origin rules to sellers physically located there. Remote
+          sellers should assume destination.
+        </dd>
+        <dt>Do I charge tax on shipping?</dt>
+        <dd>
+          It depends on the state, and it is genuinely split. Some tax shipping
+          always, some never, and some only when it is not separately stated on
+          the invoice. Separately stating it is the safer default.
+        </dd>
+        <dt>What about the five states with no sales tax?</dt>
+        <dd>
+          Delaware, Montana, New Hampshire and Oregon have none at any level.
+          Alaska has no state tax but many boroughs and cities levy their own,
+          so "no sales tax in Alaska" is wrong often enough to matter.
+        </dd>
+      </dl>
+    </section>
+
+    <RelatedTools items={related} />
+  </ToolShell>
+</BaseLayout>
+
+<script>
+  import { mount } from '@kit/calc/engine';
+  import { currency } from '@kit/calc/format';
+  import { FIELDS, makeCompute } from '../../lib/tools/sales-tax';
+  import type { SalesTaxModel } from '../../lib/tools/sales-tax';
+  import { SALES_TAX } from '../../data/sales-tax';
+
+  document.getElementById('st-form')?.addEventListener('submit', (e) => e.preventDefault());
+
+  mount<SalesTaxModel>({
+    id: 'st',
+    fields: FIELDS,
+    compute: makeCompute(SALES_TAX),
+    debounceMs: 60,
+    onRender(m) {
+      const label = document.getElementById('st-label');
+      if (label) label.textContent = m.isRemoving ? 'Tax included in that total' : 'Sales tax to add';
+
+      const notes = document.getElementById('st-notes');
+      if (!notes) return;
+      const items: string[] = [];
+
+      if (m.noSalesTax) {
+        items.push(`<li><strong>${m.stateName} has no sales tax at any level.</strong> Nothing to add or remove.</li>`);
+      } else if (m.stateRate === 0) {
+        items.push(`<li><strong>${m.stateName} has no state sales tax</strong>, but local jurisdictions levy their own — up to ${m.maxCombined.toFixed(2)}%. The rate depends entirely on the specific locality.</li>`);
+      }
+
+      if (m.hasLocalVariation) {
+        items.push(`<li><strong>Rates in ${m.stateName} range from ${m.minCombined.toFixed(2)}% to ${m.maxCombined.toFixed(2)}%</strong> depending on the locality. The figure above uses the ${m.localRate === 0 ? 'state rate only' : 'local add-on you selected'} — confirm the exact rate for the delivery address before charging it.</li>`);
+      }
+
+      if (m.nexusChecked) {
+        if (m.nexusTriggered) {
+          const why = m.salesMet && m.txnsMet ? 'both the sales and transaction tests'
+            : m.salesMet ? 'the sales threshold' : 'the transaction count threshold';
+          items.push(`<li><strong>You have likely triggered economic nexus in ${m.stateName}</strong> — you meet ${why}. Registration and collection are generally required. Confirm with the state, and check whether marketplace sales count toward your total there.</li>`);
+        } else if (m.nexusSales !== null) {
+          items.push(`<li><strong>No nexus yet in ${m.stateName}.</strong> You are ${currency(m.salesRemaining)} of sales below the ${currency(m.nexusSales)} threshold${m.nexusTransactions ? `, and under the ${m.nexusTransactions}-transaction test` : ''}. The window is a rolling twelve months, not a calendar year.</li>`);
+        }
+      }
+
+      if (m.note) items.push(`<li>${m.note}</li>`);
+
+      notes.innerHTML = items.length
+        ? `<div class="note${m.nexusTriggered ? ' note--warn' : ''}"><strong class="note__title">${m.nexusTriggered ? 'Action may be required' : 'Worth knowing'}</strong><ul style="margin:0;padding-left:1.1rem">${items.join('')}</ul></div>`
+        : '';
+    },
+  });
+</script>

@@ -21,6 +21,8 @@ registerHooks({
 
 const { FEDERAL } = await import(pathToFileURL(path.join(root, 'src/data/federal.ts')).href);
 const { STATE_TAX } = await import(pathToFileURL(path.join(root, 'src/data/states-tax.ts')).href);
+const { SALES_TAX } = await import(pathToFileURL(path.join(root, 'src/data/sales-tax.ts')).href);
+const { CAP_GAINS, CREDITS, SE_TAX } = await import(pathToFileURL(path.join(root, 'src/data/federal.ts')).href);
 
 const strict = process.env.PUBLIC_REQUIRE_VERIFIED === '1';
 const report = process.argv.includes('--report');
@@ -71,6 +73,36 @@ if (report) {
   const approx = STATE_TAX.filter((s) => s.kind === 'progressive' && !s.mfjDoubles);
   console.log(`    married brackets approximated in: ${approx.map((s) => s.code).join(', ')}`);
   console.log(`    local income tax not modelled in: ${STATE_TAX.filter((s) => s.localTax).map((s) => s.code).join(', ')}`);
+}
+
+// --- capital gains, credits, SE constants ---
+for (const [name, obj] of [['capital gains', CAP_GAINS], ['credits', CREDITS], ['SE tax', SE_TAX]]) {
+  if (!obj.verified) { unverified++; console.log(`  ${name}: UNVERIFIED`); }
+}
+for (const [status, b] of Object.entries(CAP_GAINS.brackets)) {
+  if (b[b.length - 1].upTo !== null) problems.push(`capgains/${status}: top bracket must have upTo: null`);
+  let prev = 0;
+  for (const x of b) {
+    if (x.rate < 0 || x.rate > 40) problems.push(`capgains/${status}: implausible rate ${x.rate}`);
+    if (x.upTo !== null && x.upTo <= prev) problems.push(`capgains/${status}: brackets out of order`);
+    if (x.upTo !== null) prev = x.upTo;
+  }
+}
+
+// --- sales tax ---
+const badSales = SALES_TAX.filter((x) => !x.verified);
+unverified += badSales.length;
+console.log(`  sales tax: ${SALES_TAX.length - badSales.length}/${SALES_TAX.length} verified`);
+const salesSlugs = new Set();
+for (const x of SALES_TAX) {
+  if (salesSlugs.has(x.code)) problems.push(`sales tax: duplicate code "${x.code}"`);
+  salesSlugs.add(x.code);
+  if (x.stateRate < 0 || x.stateRate > 15) problems.push(`${x.code}: implausible state sales rate ${x.stateRate}`);
+  if (x.maxLocalRate < x.avgLocalRate) problems.push(`${x.code}: max local below average local`);
+  if (x.nexusSales !== null && x.nexusSales < 1000) problems.push(`${x.code}: implausible nexus threshold`);
+}
+if (report) {
+  console.log(`    transaction-count nexus test in: ${SALES_TAX.filter((x) => x.nexusTransactions).map((x) => x.code).join(', ')}`);
 }
 
 if (problems.length) {

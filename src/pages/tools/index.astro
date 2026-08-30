@@ -13,7 +13,7 @@ const canonical = '/tools';
       </nav>
       <div class="tool-hero">
         <h1>All calculators</h1>
-        <p>Five tools covering your paycheck, self-employment, and investment sales.</p>
+        <p>Five tools covering your paycheck, self-employment, and investment sales. All live.</p>
       </div>
     </div>
   </div>
@@ -26,9 +26,5 @@ const canonical = '/tools';
         </a>
       ))}
     </div>
-    <p class="note" style="margin-top:var(--s-6)">
-      <strong class="note__title">In progress</strong>
-      {BUILT.length} of {TOOLS.length} calculators are live: {TOOLS.filter((t) => !t.built).map((t) => t.nav).join(", ")} are still being built and are not linked anywhere until their pages exist.
-    </p>
   </div>
 </BaseLayout>

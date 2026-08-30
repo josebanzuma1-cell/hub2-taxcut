@@ -43,3 +43,23 @@ plausible rate ranges, a null-ceilinged top bracket, and unique slugs. With
 set that in production.
 
 `npm run data:report` lists what is outstanding, plus both caveat lists.
+
+## Sales tax — `sales-tax.ts`
+
+Verify rates against each state's department of revenue, and nexus thresholds
+against the state's remote-seller guidance.
+
+**Scope limit, stated on the page:** this is a state rate plus a typical local
+average, not a ZIP-level lookup. A single ZIP can straddle two districts, so a
+precise-looking combined rate we cannot source would be worse than an honest
+range. Anyone charging tax for real needs a rooftop-accurate rate service.
+
+Nexus thresholds shift as states amend their rules — several have repealed
+their transaction-count test since Wayfair, and more will. Re-check annually.
+
+## Capital gains, credits and SE constants — in `federal.ts`
+
+`CAP_GAINS` (long-term brackets, NIIT thresholds, the §121 residence
+exclusion), `CREDITS` (child and other-dependant amounts and phase-out
+starts), and `SE_TAX` (the 92.35% net earnings rate and the SE rates). All
+seeded, all needing the same IRS Revenue Procedure check as the main brackets.

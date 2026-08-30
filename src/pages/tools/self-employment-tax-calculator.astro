@@ -1,0 +1,338 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ToolShell from '@kit/components/ToolShell.astro';
+import Field from '@kit/components/Field.astro';
+import SelectField from '@kit/components/SelectField.astro';
+import Segmented from '@kit/components/Segmented.astro';
+import Chart from '@kit/components/Chart.astro';
+import DataNote from '@kit/components/DataNote.astro';
+import RelatedTools from '@kit/components/RelatedTools.astro';
+import { SITE, toolBySlug, toolsExcept } from '../../lib/site';
+import { D } from '../../lib/tools/self-employment';
+import { STATE_TAX } from '@data/states-tax';
+
+const tool = toolBySlug('self-employment-tax-calculator')!;
+const canonical = `/tools/${tool.slug}`;
+const title = `Self-Employment Tax & Quarterly Estimate Calculator | ${SITE.name}`;
+const description =
+  'Work out self-employment tax, the deductible half, your federal and state ' +
+  'income tax, and what to send the IRS each quarter to stay inside the safe harbour.';
+const schema = [{
+  '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Home', item: SITE.url },
+    { '@type': 'ListItem', position: 2, name: 'Calculators', item: `${SITE.url}/tools` },
+    { '@type': 'ListItem', position: 3, name: tool.nav, item: `${SITE.url}${canonical}` },
+  ],
+}];
+const related = toolsExcept(tool.slug).slice(0, 3).map((t) => ({
+  href: `/tools/${t.slug}`, title: t.title, desc: t.blurb,
+}));
+const stateOptions = [...STATE_TAX].sort((a, b) => a.name.localeCompare(b.name))
+  .map((s) => ({ value: s.code, label: s.name }));
+---
+<BaseLayout {title} {description} {canonical} {schema}>
+  <ToolShell
+    title="Self-Employment Tax & Quarterly Estimates"
+    intro="Self-employment tax is not income tax, and it catches people who budgeted only for the latter. This works out both, the deductible half, and the four payments that keep you out of penalty territory."
+    breadcrumbs={[{ href: '/', label: 'Home' }, { href: '/tools', label: 'Calculators' }, { label: tool.nav }]}
+    calcId="se"
+  >
+    <form slot="controls" id="se-form">
+      <Field name="profit" label="Net business profit" affix="currency" value={D.profit}
+             hint="after expenses, before tax" min={0} max={10000000} step={1000}
+             slider sliderMin={0} sliderMax={400000} sliderStep={1000} />
+      <Field name="w2" label="W-2 wages this year" affix="currency" value={D.w2}
+             hint="from a job, if any — fills the Social Security base first"
+             min={0} max={10000000} step={1000}
+             slider sliderMin={0} sliderMax={300000} sliderStep={1000} />
+      <div class="field-grid field-grid--2">
+        <SelectField name="st" label="State" value={D.st} options={stateOptions} />
+        <Field name="prior" label="Last year's total tax" affix="currency" value={D.prior}
+               hint="for the safe harbour" min={0} max={5000000} step={500} />
+      </div>
+      <Segmented name="status" label="Filing status" value={D.status}
+        options={[{ value: 'single', label: 'Single' }, { value: 'married', label: 'Married' }, { value: 'head', label: 'Head of house' }]} />
+      <div class="fieldset">
+        <legend>Adjustments</legend>
+        <Segmented name="qbi" label="Qualified business income deduction" value={D.qbi ? '1' : '0'}
+          options={[{ value: '1', label: 'Apply 20%' }, { value: '0', label: 'Skip' }]} />
+        <Field name="priorAgi" label="Last year's AGI" affix="currency" value={D.priorAgi}
+               hint="above $150k raises the safe harbour to 110%" min={0} max={50000000} step={1000} />
+      </div>
+    </form>
+
+    <div slot="results" class="results">
+      <div class="results__headline">
+        <div class="results__headline-label">Send this each quarter</div>
+        <div class="results__headline-value num" data-out="quarterly" data-fmt="currency">—</div>
+        <div class="results__headline-sub">
+          <span data-out="totalTax" data-fmt="currency">—</span> for the year, across federal, state and self-employment tax.
+        </div>
+      </div>
+      <div class="results__grid results__grid--3">
+        <div class="stat">
+          <div class="stat__label">Self-employment tax</div>
+          <div class="stat__value num" data-out="seTax" data-fmt="currency">—</div>
+          <div class="stat__note">15.3% of net earnings</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Federal income tax</div>
+          <div class="stat__value num" data-out="federalTax" data-fmt="currency">—</div>
+          <div class="stat__note"><span data-out="marginalFederal" data-fmt="percent0">—</span> marginal</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">State income tax</div>
+          <div class="stat__value num" data-out="stateTax" data-fmt="currency">—</div>
+          <div class="stat__note" data-out="stateName">—</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Deductible half of SE tax</div>
+          <div class="stat__value num" data-out="deductibleHalf" data-fmt="currency">—</div>
+          <div class="stat__note">reduces income tax</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">QBI deduction</div>
+          <div class="stat__value num" data-out="qbiDeduction" data-fmt="currency">—</div>
+          <div class="stat__note">estimate only</div>
+        </div>
+        <div class="stat">
+          <div class="stat__label">Effective rate</div>
+          <div class="stat__value num" data-out="effectiveRate" data-fmt="percent1">—</div>
+          <div class="stat__note">of net profit</div>
+        </div>
+      </div>
+      <div class="results__chart">
+        <Chart id="chart-se" height={190} label="Where the profit goes" />
+      </div>
+      <div class="results__actions">
+        <button type="button" class="btn btn--primary" data-action="share">Copy shareable link</button>
+        <button type="button" class="btn" data-action="reset">Reset</button>
+      </div>
+    </div>
+
+    <div id="se-notes" style="margin-top:var(--s-5)"></div>
+
+    <section style="margin-top:var(--s-7)">
+      <div class="section-head">
+        <h2>Payment schedule</h2>
+        <p>Quarters are not equal calendar quarters — the second is two months long and the fourth lands in January.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data" id="se-table">
+          <thead><tr><th>Period covered</th><th>Due</th><th>Payment</th></tr></thead>
+          <tbody><tr><td colspan="3" style="text-align:center;color:var(--c-ink-3)">Calculating…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div style="margin-top:var(--s-5)">
+      <DataNote source="Federal and state parameters seeded for tax year 2025" verified={false}
+                note="Self-employment tax rates, the wage base and QBI rules all change. Verify against IRS Schedule SE and Publication 505 before making a payment." />
+    </div>
+
+    <section class="prose" style="margin-top:var(--s-7)">
+      <h2>Why self-employment tax feels like a punishment</h2>
+      <p>
+        An employee pays 7.65% of their wages in Social Security and Medicare.
+        Their employer quietly pays another 7.65% that never appears on the pay
+        stub. When you work for yourself you are both parties, so you pay the
+        whole 15.3%. Nothing has been added — you have simply become visible to
+        a cost that was always there.
+      </p>
+      <p>
+        The system softens it in two ways, and both are in the calculation
+        above. First, the tax applies to 92.35% of your profit rather than all
+        of it, which approximates the employer share an employee never counts as
+        income. Second, half your self-employment tax is deductible against
+        income tax, which lowers the income tax owed on the same profit.
+      </p>
+      <div class="formula">
+        Net earnings = profit × 92.35%<br />
+        SE tax = 12.4% (to the wage base) + 2.9% Medicare<br />
+        Deduction = SE tax ÷ 2
+      </div>
+
+      <h2>If you also have a job</h2>
+      <p>
+        This is where quick estimators go wrong. Social Security is capped at an
+        annual wage base, and your W-2 wages fill that cap <em>first</em>. If a
+        job already pays you above the base, your business profit owes no Social
+        Security portion at all — only the 2.9% Medicare.
+      </p>
+      <p>
+        The difference is 12.4% of your profit, which on $50,000 of side income
+        is over $6,000. Enter your W-2 wages above and watch the self-employment
+        figure fall as they rise past the base.
+      </p>
+
+      <h2>Quarterly payments and the safe harbour</h2>
+      <p>
+        Income tax is pay-as-you-go. An employee satisfies that through payroll
+        withholding; you satisfy it by sending estimated payments four times a
+        year. Miss them and you owe an underpayment penalty even if you settle
+        the full amount in April.
+      </p>
+      <p>
+        You do not have to predict the year perfectly. The safe harbour says you
+        avoid the penalty if you pay the <strong>lesser</strong> of:
+      </p>
+      <ul>
+        <li><strong>90% of this year's total tax</strong>, or</li>
+        <li><strong>100% of last year's total tax</strong> — 110% if last year's adjusted gross income was above $150,000.</li>
+      </ul>
+      <p>
+        The prior-year route is the useful one, because you already know the
+        number. In a year your income grows sharply, paying last year's tax in
+        four instalments keeps you penalty-free while you keep the difference
+        until April. Enter last year's total tax above and the calculator takes
+        the cheaper of the two routes.
+      </p>
+      <div class="callout">
+        <strong>The safe harbour is about penalties, not about what you owe.</strong>
+        Paying the prior-year amount protects you from the penalty; it does not
+        reduce the tax. If your income rose, the balance is still due at filing.
+        Set the difference aside rather than being surprised by it.
+      </div>
+
+      <h2>The QBI deduction</h2>
+      <p>
+        Section 199A allows many pass-through businesses to deduct 20% of
+        qualified business income. It is worth real money — at a 22% marginal
+        rate it cuts the effective rate on that income to about 17.6%.
+      </p>
+      <p>
+        The calculator applies a flat 20%, which is right for most sole
+        proprietors below the income thresholds. It is an estimate. Above those
+        thresholds the deduction is limited by W-2 wages paid and property held,
+        and it phases out entirely for specified service businesses — health,
+        law, accounting, consulting, financial services and others. If you are
+        near the threshold or in a service field, this line needs an accountant
+        rather than a calculator.
+      </p>
+
+      <h2>What to set aside</h2>
+      <p>
+        The effective rate above is the number to budget against. For most sole
+        proprietors it lands between 20% and 35% of profit once federal, state
+        and self-employment tax are combined. Moving that share into a separate
+        account as money arrives — rather than hunting for it quarterly — is the
+        single habit separating people who find estimated payments routine from
+        people who find them alarming.
+      </p>
+
+      <h2>What this excludes</h2>
+      <ul>
+        <li><strong>Business expenses.</strong> Enter profit after expenses. Deductions reduce both income tax and self-employment tax, which is why they are worth more to you than to an employee.</li>
+        <li><strong>Retirement plans.</strong> A SEP-IRA or solo 401(k) can shelter a large share of profit from income tax, though not from self-employment tax.</li>
+        <li><strong>The self-employed health insurance deduction</strong>, which reduces AGI for those who qualify.</li>
+        <li><strong>Local income tax</strong>, in the states that levy it.</li>
+        <li><strong>S-corporation elections</strong>, which change the calculation fundamentally by splitting profit into salary and distribution.</li>
+      </ul>
+
+      <h2>Common questions</h2>
+      <dl class="faq">
+        <dt>What if my income is uneven?</dt>
+        <dd>
+          The default assumption is that income arrives evenly. If yours is
+          seasonal you can annualise using Form 2210 Schedule AI, which matches
+          payments to when income was actually earned. More work, but it
+          prevents a penalty on a quarter where you earned almost nothing.
+        </dd>
+        <dt>Do I need to pay quarterly if I also have a job?</dt>
+        <dd>
+          Not necessarily. You can raise withholding at the job instead — line
+          4(c) of the W-4 — and cover the business tax that way. Withholding
+          counts as paid evenly across the year regardless of when it actually
+          happened, which makes it a useful way to fix an under-payment late in
+          the year. The <a href="/tools/w4-withholding-calculator">W-4
+          calculator</a> works out the amount.
+        </dd>
+        <dt>What happens if I skip a quarter?</dt>
+        <dd>
+          The penalty is effectively interest on the underpayment for the days
+          it was late, at the federal short-term rate plus three points. Not
+          catastrophic for one missed quarter, but it compounds and it is
+          entirely avoidable.
+        </dd>
+        <dt>Why is the second quarter only two months?</dt>
+        <dd>
+          There is no principled reason — the periods are a historical artefact.
+          April covers three months, June covers two, September covers three and
+          January covers four. The schedule above shows the actual periods.
+        </dd>
+      </dl>
+    </section>
+
+    <RelatedTools items={related} />
+  </ToolShell>
+</BaseLayout>
+
+<script>
+  import { mount } from '@kit/calc/engine';
+  import { stackedBarChart } from '@kit/calc/chart';
+  import { currency, currencyCompact } from '@kit/calc/format';
+  import { FIELDS, makeCompute } from '../../lib/tools/self-employment';
+  import type { SEModel } from '../../lib/tools/self-employment';
+  import { STATE_TAX } from '../../data/states-tax';
+
+  document.getElementById('se-form')?.addEventListener('submit', (e) => e.preventDefault());
+
+  const DUE: Array<[string, string]> = [
+    ['1 January – 31 March', '15 April'],
+    ['1 April – 31 May', '15 June'],
+    ['1 June – 31 August', '15 September'],
+    ['1 September – 31 December', '15 January'],
+  ];
+
+  mount<SEModel>({
+    id: 'se',
+    fields: FIELDS,
+    compute: makeCompute(STATE_TAX),
+    debounceMs: 80,
+    onRender(m) {
+      const el = document.getElementById('chart-se');
+      if (el) {
+        stackedBarChart(el, {
+          groups: [{
+            label: 'Net profit',
+            segments: [
+              { value: m.kept, color: 'var(--c-series-1)', name: 'Kept' },
+              { value: m.seTax, color: 'var(--c-series-2)', name: 'SE tax' },
+              { value: m.federalTax, color: '#8a6fb0', name: 'Federal' },
+              { value: m.stateTax, color: 'var(--c-series-3)', name: 'State' },
+            ].filter((s) => s.value > 0),
+          }],
+          yFormat: currencyCompact,
+          height: 190,
+        });
+      }
+
+      const body = document.querySelector('#se-table tbody');
+      if (body) {
+        const amount = m.usesSafeHarbor ? m.safeHarborQuarterly : m.quarterly;
+        body.innerHTML = DUE.map(([period, due]) =>
+          `<tr><td>${period}</td><td>${due}</td><td>${currency(amount)}</td></tr>`).join('');
+      }
+
+      const notes = document.getElementById('se-notes');
+      if (!notes) return;
+      const items: string[] = [];
+      if (m.ssFullyUsedByW2) {
+        items.push(`<li><strong>Your W-2 wages already fill the Social Security wage base.</strong> Your business profit owes only the 2.9% Medicare portion rather than the full 15.3% — worth roughly ${currency(m.netEarnings * 0.124)} this year.</li>`);
+      }
+      if (m.usesSafeHarbor) {
+        items.push(`<li><strong>Paying last year's tax is the cheaper route.</strong> The safe harbour lets you send ${currency(m.safeHarborTotal)} across the year (${m.safeHarborRate}% of last year) rather than ${currency(m.totalTax * 0.9)}. You avoid the penalty either way — but the balance is still due at filing, so set the difference aside.</li>`);
+      }
+      if (m.qbiDeduction > 0) {
+        items.push(`<li><strong>The QBI deduction shown is a flat 20% estimate.</strong> Above the income thresholds it is limited by wages and property, and it phases out entirely for service businesses. Treat it as indicative.</li>`);
+      }
+      if (m.additionalMedicare > 0) {
+        items.push(`<li><strong>Additional Medicare applies</strong> — 0.9% on combined earnings above the threshold for your filing status.</li>`);
+      }
+      notes.innerHTML = items.length
+        ? `<div class="note note--warn"><strong class="note__title">Worth knowing for your situation</strong><ul style="margin:0;padding-left:1.1rem">${items.join('')}</ul></div>`
+        : '';
+    },
+  });
+</script>

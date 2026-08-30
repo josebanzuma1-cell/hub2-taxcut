@@ -62,8 +62,14 @@ export function applyOutputs(root: HTMLElement, result: unknown): void {
     if (!(key in flat)) continue;
     const raw = flat[key];
     const fmtName = node.dataset.fmt ?? 'number';
-    const fmt = FORMATTERS[fmtName] ?? FORMATTERS.number;
-    node.textContent = typeof raw === 'number' ? fmt(raw) : String(raw ?? '—');
+    const fmt = FORMATTERS[fmtName];
+    if (!fmt && import.meta.env?.DEV) {
+      // Falling back silently turns a typo into a plausible-looking wrong
+      // number — 'percent2' rendering as '9' instead of '8.85%'. Say so.
+      console.warn(`[calc] unknown data-fmt "${fmtName}" on [data-out="${key}"] — falling back to number`);
+    }
+    const use = fmt ?? FORMATTERS.number;
+    node.textContent = typeof raw === 'number' ? use(raw) : String(raw ?? '—');
     if (node.dataset.sign !== undefined && typeof raw === 'number') {
       node.classList.toggle('stat__value--pos', raw > 0);
       node.classList.toggle('stat__value--neg', raw < 0);
