@@ -1,8 +1,8 @@
 /* Hub-specific configuration. Rewritten per hub; the kit reads nothing from here. */
 
 export const SITE = {
-  name: 'Take Home',
-  tagline: 'Paycheck and tax calculators that show the whole deduction stack',
+  name: 'Tax Cut',
+  tagline: 'See what you keep, and what you could keep',
   description:
     'Free take-home pay calculator with federal, state, FICA and pre-tax ' +
     'deductions itemised line by line. Plus quarterly estimates for the ' +

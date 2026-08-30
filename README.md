@@ -1,9 +1,10 @@
-# Take Home — Hub 2: Tax & Paycheck
+# Tax Cut — Hub 2: Tax & Paycheck
 
 Take-home pay calculator with all 50 states and DC. Hub 2 of the utility site
 portfolio. Astro 5, static, one vanilla-TS island per page, no UI framework.
 
-The `src/kit/` folder is byte-identical to Hub 1's. See `PORTING.md`.
+The shared half of `src/kit/` is byte-identical to Hub 1's; the palette, layout
+layer and logo are deliberately per-hub. See `PORTING.md` for the boundary.
 
 ## Quick start
 

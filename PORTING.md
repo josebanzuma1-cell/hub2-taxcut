@@ -13,7 +13,6 @@ src/kit/                    <- copy wholesale, do not edit per hub
   styles/base.css
   styles/forms.css
   styles/components.css
-  styles/surfaces.css      <- dark header, hero band, tiles, trust strip
   calc/engine.ts            <- mount(), input binding, debounce, URL state
   calc/finance.ts           <- pmt, amortize, futureValue, npv, irr
   calc/format.ts            <- currency/percent/months formatters
@@ -34,6 +33,7 @@ Also copy `scripts/check-data.mjs` if the hub has programmatic data.
 |---|---|
 | `src/lib/site.ts` | Name, tagline, the `TOOLS` registry. This is the single source for nav, cards, footer and internal links. |
 | `src/lib/tools/*.ts` | One module per calculator: `FIELDS`, `D`, `compute()`. |
+| `src/styles/surfaces.css` | **The layout layer, and deliberately NOT in the kit.** This is what stops the portfolio looking like one template. Hub 1 uses a dark centred hero with a selector pill; Hub 2 a light split hero with a salary input and cards lifted over the hero edge. Rewrite it per hub. |
 | `src/pages/**` | Page shells and prose. |
 | `src/data/*` | Programmatic data sets. |
 | `src/layouts/BaseLayout.astro` | Footer links and JSON-LD. Structure stays. |
@@ -144,3 +144,38 @@ site loses the trust the strip is there to build.
    truncating it and fusing the remainder into the next line. It corrupted this
    file's heading twice. Use `node -e` with explicit string ops for anything
    containing pipes.
+
+## Why surfaces.css is not in the kit
+
+The kit holds primitives that should behave identically everywhere: tokens,
+form controls, the calculator engine, charts, the results card. The *layout* —
+header treatment, hero shape, how cards sit on the page — is the thing that
+has to differ, so it lives in `src/styles/surfaces.css` per hub.
+
+This matters beyond aesthetics. The build plan warns that duplicating page
+structure across a domain portfolio is the pattern doorway-page and
+scaled-content detection targets. Different layouts reduce that footprint.
+They are not the main protection though — genuinely different content, formulas
+and internal linking are, and those come from each hub being about a different
+subject. Treat the layout difference as hygiene, not as the defence.
+
+Class names are the contract between the kit and the layout layer. `ToolShell`
+renders `.tool-band`; each hub decides what that looks like.
+## The kit boundary
+
+Three things are per-hub and must NOT sit in `src/kit/`:
+
+| Per-hub | Why |
+|---|---|
+| `src/styles/surfaces.css` | Layout. The hero shape, header treatment and card placement are what make two hubs look like two products. |
+| `src/components/Logo.astro` | The mark. Each hub gets its own silhouette — at favicon size the outline is the only thing distinguishing them. |
+| `src/kit/styles/tokens.css` **values** | The palette. Token *names* are the shared contract and never change; the hex values are rewritten per hub. This one file stays in the kit because its structure is shared even though its values are not. |
+
+Everything else in `src/kit/` should be byte-identical across hubs. Check with:
+
+```bash
+diff -r src/kit ../hub-01-mortgage/src/kit --exclude=tokens.css
+```
+
+If that prints anything, a fix landed in one hub and not the other — port it
+before the two drift further.

@@ -4,9 +4,9 @@ import '@kit/styles/tokens.css';
 import '@kit/styles/base.css';
 import '@kit/styles/forms.css';
 import '@kit/styles/components.css';
-import '@kit/styles/surfaces.css';
+import '../styles/surfaces.css';
 import { SITE, NAV } from '../lib/site';
-import Logo from '@kit/components/Logo.astro';
+import Logo from '../components/Logo.astro';
 
 interface Props {
   title: string;
@@ -52,7 +52,7 @@ const year = new Date().getFullYear();
     {schema.map((s) => <script type="application/ld+json" set:html={JSON.stringify(s)} />)}
   </head>
   <body>
-    <header class="site-header site-header--deep">
+    <header class="site-header site-header--light">
       <div class="page site-header__inner">
         <a class="brand" href="/">
           <Logo size={26} />
@@ -63,7 +63,7 @@ const year = new Date().getFullYear();
             <a href={item.href} aria-current={canonical === item.href ? 'page' : undefined}>{item.label}</a>
           ))}
         </nav>
-        <a class="header-cta" href="/tools">All calculators</a>
+        <a class="header-cta" href="/tools/paycheck-calculator">Check my paycheck</a>
       </div>
     </header>
 

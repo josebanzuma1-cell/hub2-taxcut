@@ -1,0 +1,42 @@
+---
+/* KIT — brand mark.
+   A percent sign inside a circle, with the diagonal broken by a gap: the rate
+   is literally cut. Circular silhouette, deliberately unlike the rounded-square
+   marks used elsewhere in the portfolio — at favicon size the outline is what
+   distinguishes one site from another, not the detail inside it.
+
+   Drawn on a 32×32 grid. Body follows --c-accent so re-theming a hub re-themes
+   the mark; --logo-body and --logo-glyph override it on dark surfaces. */
+interface Props {
+  size?: number;
+  /** accessible name; omit when a text wordmark sits next to it */
+  title?: string;
+}
+const { size = 24, title } = Astro.props;
+---
+<svg
+  width={size} height={size} viewBox="0 0 32 32"
+  fill="none" xmlns="http://www.w3.org/2000/svg"
+  role={title ? 'img' : 'presentation'}
+  aria-label={title}
+  aria-hidden={title ? undefined : 'true'}
+  class="logo"
+>
+  {title && <title>{title}</title>}
+
+  <circle cx="16" cy="16" r="15" fill="var(--logo-body, var(--c-accent))" />
+
+  <g stroke="var(--logo-glyph, #fff)" stroke-width="2.6" stroke-linecap="round" fill="none">
+    <!-- the cut: one diagonal, broken in the middle -->
+    <path d="M22.2 9.0 17.9 14.1" />
+    <path d="M14.1 17.9 9.8 23.0" />
+  </g>
+  <g fill="var(--logo-glyph, #fff)">
+    <circle cx="11.4" cy="11.4" r="2.5" />
+    <circle cx="20.6" cy="20.6" r="2.5" />
+  </g>
+</svg>
+
+<style>
+  .logo { display: block; flex: none; }
+</style>

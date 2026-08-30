@@ -1,0 +1,179 @@
+/* HUB-SPECIFIC layout layer. Not part of src/kit/ — this is deliberately the
+   file that makes each hub in the portfolio look like a different product
+   rather than one template re-skinned.
+
+   This hub follows a light-hero / split-column structure: white header, a
+   pale tinted hero with the headline left and a visual right, and the tool
+   cards lifted so they overlap the hero's lower edge. */
+
+/* ---------- light header ---------- */
+.site-header--light {
+  background: var(--c-surface);
+  border-bottom: 1px solid var(--c-line);
+}
+.site-header--light .site-header__inner { min-height: 68px; }
+.site-header--light .brand { color: var(--c-deep); }
+.site-header--light .nav a { color: var(--c-ink-2); font-weight: 520; }
+.site-header--light .nav a:hover,
+.site-header--light .nav a[aria-current='page'] { color: var(--c-accent); }
+
+.header-cta {
+  display: none; align-items: center; gap: var(--s-2);
+  background: var(--c-accent); color: #fff;
+  font-size: var(--t-sm); font-weight: 620; text-decoration: none;
+  padding: 0 var(--s-4); height: 40px; border-radius: var(--r-md);
+  transition: background .12s ease;
+}
+.header-cta:hover { background: var(--c-accent-2); color: #fff; }
+@media (min-width: 900px) { .header-cta { display: inline-flex; } }
+
+/* ---------- split hero, pale ground ---------- */
+.hero {
+  background: linear-gradient(170deg, var(--c-tint-1) 0%, var(--c-tint-3) 100%);
+  padding-block: var(--s-7) var(--s-9);
+  position: relative;
+}
+.hero__grid {
+  display: grid; gap: var(--s-6); align-items: center;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 900px) {
+  .hero__grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: var(--s-7); }
+}
+.hero h1 {
+  font-size: clamp(2rem, 4.6vw, 3.3rem);
+  letter-spacing: -0.035em; line-height: 1.08; color: var(--c-deep);
+  max-width: 15ch;
+}
+.hero h1 em { font-style: normal; color: var(--c-accent); }
+.hero__sub {
+  margin-top: var(--s-4); font-size: var(--t-md); color: var(--c-ink-2);
+  max-width: 44ch;
+}
+.hero__note { margin-top: var(--s-3); font-size: var(--t-sm); color: var(--c-ink-3); }
+.hero__art { display: none; }
+@media (min-width: 900px) { .hero__art { display: block; } }
+
+/* ---------- salary quick-start ---------- */
+.quick {
+  display: flex; flex-direction: column; gap: var(--s-3);
+  margin-top: var(--s-5); max-width: 30rem;
+}
+@media (min-width: 560px) { .quick { flex-direction: row; align-items: stretch; } }
+
+.quick__field {
+  flex: 1; min-width: 0; display: flex; align-items: center;
+  background: var(--c-surface); border: 1px solid var(--c-line-2);
+  border-radius: var(--r-md); height: 56px; padding-inline: var(--s-4);
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+.quick__field:focus-within {
+  border-color: var(--c-accent); box-shadow: 0 0 0 3px var(--c-accent-soft);
+}
+.quick__prefix { color: var(--c-ink-3); font-size: var(--t-md); margin-right: 4px; }
+.quick__field input {
+  flex: 1; min-width: 0; border: 0; background: none; font: inherit;
+  font-size: var(--t-md); font-weight: 560; color: var(--c-ink);
+  font-variant-numeric: tabular-nums; height: 100%;
+}
+.quick__field input:focus { outline: none; }
+
+.quick__go {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-2);
+  background: var(--c-accent); color: #fff; border: 0;
+  border-radius: var(--r-md); height: 56px; padding-inline: var(--s-5);
+  font: inherit; font-size: var(--t-base); font-weight: 640;
+  cursor: pointer; white-space: nowrap;
+  transition: background .12s ease, transform .1s ease;
+}
+.quick__go:hover { background: var(--c-accent-2); }
+.quick__go:active { transform: translateY(1px); }
+
+/* ---------- cards lifted over the hero's lower edge ---------- */
+.lift { margin-top: calc(var(--s-8) * -1); position: relative; z-index: 2; }
+.lift .cardrow {
+  display: grid; gap: var(--s-4);
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+.pcard {
+  display: flex; flex-direction: column; gap: var(--s-3);
+  background: var(--c-surface); border: 1px solid var(--c-line);
+  border-radius: var(--r-lg); padding: var(--s-5);
+  text-decoration: none; color: var(--c-ink);
+  transition: transform .14s ease, box-shadow .14s ease;
+}
+.pcard:hover { transform: translateY(-4px); box-shadow: var(--shadow-lift); color: var(--c-ink); }
+.pcard__icon {
+  width: 40px; height: 40px; border-radius: 12px; flex: none;
+  display: grid; place-items: center;
+  background: var(--c-accent-soft); color: var(--c-accent);
+}
+.pcard__title { font-size: var(--t-base); font-weight: 660; letter-spacing: -0.015em; }
+.pcard__desc { font-size: var(--t-sm); color: var(--c-ink-2); line-height: 1.55; flex: 1; }
+.pcard--muted { opacity: .66; }
+.pcard--muted .pcard__icon { background: var(--c-surface-2); color: var(--c-ink-3); }
+
+/* ---------- section rhythm ---------- */
+.section { padding-block: var(--s-8); }
+.section--tint { background: var(--c-surface-2); }
+.section__head { max-width: 42rem; margin-bottom: var(--s-6); }
+.section__head h2 { font-size: clamp(1.5rem, 3vw, 2rem); letter-spacing: -0.03em; color: var(--c-deep); }
+.section__head p { margin-top: var(--s-3); color: var(--c-ink-2); font-size: var(--t-md); }
+
+/* Numbered explainer rows — a list rather than a card grid, so the page
+   silhouette differs from a tile-based layout at a glance. */
+.rows { border-top: 1px solid var(--c-line); }
+.row {
+  display: grid; gap: var(--s-2) var(--s-5); padding-block: var(--s-5);
+  border-bottom: 1px solid var(--c-line);
+  grid-template-columns: 1fr;
+}
+@media (min-width: 780px) { .row { grid-template-columns: 5rem minmax(0, 22rem) minmax(0, 1fr); align-items: baseline; } }
+.row__num {
+  font-size: var(--t-sm); font-weight: 700; letter-spacing: .08em;
+  color: var(--c-accent); font-variant-numeric: tabular-nums;
+}
+.row h3 { font-size: var(--t-md); letter-spacing: -0.015em; }
+.row p { font-size: var(--t-sm); color: var(--c-ink-2); line-height: 1.65; }
+
+/* ---------- state directory: dense columns, not chips ---------- */
+.statecols {
+  columns: 2; column-gap: var(--s-5); font-size: var(--t-sm);
+}
+@media (min-width: 620px) { .statecols { columns: 3; } }
+@media (min-width: 900px) { .statecols { columns: 4; } }
+@media (min-width: 1100px) { .statecols { columns: 5; } }
+.statecols a {
+  display: block; padding-block: 5px; color: var(--c-ink-2);
+  text-decoration: none; break-inside: avoid;
+}
+.statecols a:hover { color: var(--c-accent); text-decoration: underline; }
+.statecols a span { color: var(--c-ink-3); font-size: var(--t-xs); }
+
+/* ---------- page + tool bands ---------- */
+.tool-band {
+  background: var(--c-tint-1);
+  border-bottom: 1px solid var(--c-line);
+  margin-bottom: var(--s-6);
+}
+.tool-band .tool-hero { padding-block: var(--s-5) var(--s-6); }
+.tool-band .tool-hero h1 { font-size: clamp(1.8rem, 3.6vw, 2.6rem); max-width: 24ch; color: var(--c-deep); }
+.tool-band .breadcrumbs { padding-top: var(--s-4); }
+
+.page-band {
+  background: var(--c-tint-1);
+  border-bottom: 1px solid var(--c-line);
+  margin-bottom: var(--s-6);
+  padding-bottom: var(--s-2);
+}
+
+/* ---------- deep footer ---------- */
+.site-footer--deep {
+  background: var(--c-deep); color: var(--c-on-deep-dim);
+  border-top: 0; margin-top: 0;
+}
+.site-footer--deep h4 { color: #fff; }
+.site-footer--deep a { color: var(--c-on-deep-dim); }
+.site-footer--deep a:hover { color: #fff; }
+.site-footer--deep .footer-legal { border-top-color: var(--c-deep-line) !important; }
+.site-footer--deep { --logo-body: #ffffff; --logo-glyph: var(--c-deep); }
