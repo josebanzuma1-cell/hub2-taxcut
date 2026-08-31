@@ -306,7 +306,9 @@ const stateOptions = [...STATE_TAX].sort((a, b) => a.name.localeCompare(b.name))
       if (m.exclusionApplied > 0) {
         items.push(`<li><strong>${currency(m.exclusionApplied)} of gain is excluded</strong> under the primary residence rules. You must have owned and lived in the home for two of the last five years, and not used the exclusion in the past two.</li>`);
       }
-      if (m.stateGainsTax === 0 && m.taxableGain > 0) {
+      if (m.untaxedGainCaveat) {
+        items.push(`<li><strong>${m.stateName} taxes capital gains even though it has no wage income tax, and this calculator does not compute it.</strong> ${m.stateNote} The state figure above is therefore understated — treat only the federal and NIIT amounts as complete.</li>`);
+      } else if (m.stateGainsTax === 0 && m.taxableGain > 0) {
         items.push(`<li><strong>${m.stateName} does not tax this gain.</strong> Only federal tax applies.</li>`);
       }
 

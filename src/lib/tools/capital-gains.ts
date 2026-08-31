@@ -48,6 +48,9 @@ export interface CapGainsModel {
   niitApplies: boolean;
   isLoss: boolean;
   stateName: string;
+  stateNote: string;
+  /** state has no wage tax but does tax gains — the model cannot compute it */
+  untaxedGainCaveat: boolean;
 }
 
 export function makeCompute(states: StateTax[]) {
@@ -122,6 +125,11 @@ export function makeCompute(states: StateTax[]) {
       niitApplies: niit > 0,
       isLoss,
       stateName: st.name,
+      stateNote: st.note,
+      // A no-income-tax state that nonetheless taxes capital gains: Washington
+      // is currently the only one. Reporting zero would be plainly wrong, so
+      // the page says the model cannot compute it rather than implying nil.
+      untaxedGainCaveat: st.kind === 'none' && /capital gains/i.test(st.note) && taxableGain > 0 && isLong,
     };
   };
 }

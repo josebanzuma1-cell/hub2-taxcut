@@ -37,7 +37,16 @@ export interface StateTax {
 const none = (code: string, name: string, note: string): StateTax => ({
   code, name, slug: name.toLowerCase().replace(/\s+/g, '-'),
   kind: 'none', standardDeduction: { single: 0, married: 0 },
-  localTax: false, note, verified: false, source: 'seeded estimate — unverified',
+  localTax: false, note,
+  // Confirmed that none of the nine taxes wage income. Washington and New
+  // Hampshire are the ones that moved recently — see their notes.
+  verified: {
+    checkedOn: '2026-08-31',
+    source: 'Tax Foundation, State Individual Income Tax Rates and Brackets 2026; ' +
+      '2026 State Tax Competitiveness Index',
+    by: 'BAMU',
+  },
+  source: 'Tax Foundation 2026 — no wage income tax confirmed',
 });
 
 const flat = (
@@ -77,11 +86,11 @@ export const STATE_TAX: StateTax[] = [
   none('FL', 'Florida', 'No state income tax.'),
   none('NV', 'Nevada', 'No state income tax.'),
   none('SD', 'South Dakota', 'No state income tax.'),
-  none('TN', 'Tennessee', 'No tax on wages. The Hall tax on interest and dividends was repealed.'),
+  none('TN', 'Tennessee', 'No tax on wages. The Hall tax on interest and dividends was fully phased out in 2021.'),
   none('TX', 'Texas', 'No state income tax.'),
   none('WY', 'Wyoming', 'No state income tax.'),
-  none('NH', 'New Hampshire', 'No tax on wages. Interest and dividends were taxed separately and that tax has been phased out.'),
-  none('WA', 'Washington', 'No tax on wages. A separate 7% tax applies to long-term capital gains above a threshold.'),
+  none('NH', 'New Hampshire', 'No tax on wages. The interest and dividends tax was fully repealed effective 1 January 2025, so New Hampshire now levies no individual income tax at all.'),
+  none('WA', 'Washington', 'No tax on wages. A separate capital gains excise tax applies to long-term gains above roughly $270,000 (indexed annually); SB 5813 replaced the flat 7% with a graduated structure adding a higher rate above $1 million.'),
 
   flat('AZ', 'Arizona', 2.50, [15_000, 30_000], false, 'Flat rate on Arizona taxable income. Arizona conforms to the federal standard deduction; the value here follows that conformity and is pending a direct check against the Department of Revenue.'),
   flat('CO', 'Colorado', 4.40, [16_100, 32_200], false, 'Flat rate; Colorado starts from federal taxable income.'),

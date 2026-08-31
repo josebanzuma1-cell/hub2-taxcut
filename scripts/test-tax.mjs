@@ -169,6 +169,9 @@ const loss = cg({ ...cgBase, sale: 5000 });
 chk('CG: loss flagged', loss.isLoss ? 1 : 0, 1, 0);
 chk('CG: loss produces no tax', loss.totalTax, 0);
 chk('CG: selling costs reduce the gain', cg({ ...cgBase, costs: 5000 }).grossGain, 40000);
+chk('CG: Washington flags its uncomputed capital gains tax', cg({ ...cgBase, st: 'WA', basis: 200000, sale: 700000 }).untaxedGainCaveat ? 1 : 0, 1, 0);
+chk('CG: Texas raises no such caveat', cg({ ...cgBase, st: 'TX', basis: 200000, sale: 700000 }).untaxedGainCaveat ? 1 : 0, 0, 0);
+chk('CG: short-term gains raise no WA caveat', cg({ ...cgBase, st: 'WA', held: 'short' }).untaxedGainCaveat ? 1 : 0, 0, 0);
 chk('CG: state taxes gains as income', cg({ ...cgBase, st: 'CA' }).stateGainsTax > 0 ? 1 : 0, 1, 0);
 
 // ============ Tool 10: sales tax ============
@@ -245,6 +248,10 @@ chk('data: social security wage base', FEDERAL.fica.socialSecurityWageBase, 184_
 chk('data: capital gains 0% ceiling, single', CAP_GAINS.brackets.single[0].upTo, 49_450, 0);
 chk('data: capital gains 15% ceiling, married', CAP_GAINS.brackets.married[1].upTo, 613_700, 0);
 chk('data: child tax credit', CREDITS.childTaxCredit, 2_200, 0);
+chk('data: 9 no-wage-tax states verified', STATE_TAX.filter((x) => x.kind === 'none' && x.verified).length, 9, 0);
+chk('data: 23 of 51 states verified', STATE_TAX.filter((x) => x.verified).length, 23, 0);
+chk('data: no-tax states charge nothing on wages',
+  STATE_TAX.filter((x) => x.kind === 'none').every((x) => compute({ ...base, st: x.code }).stateTax === 0) ? 1 : 0, 1, 0);
 chk('data: 14 single-rate states are verified', STATE_TAX.filter((x) => x.kind === 'flat' && x.verified).length, 14, 0);
 chk('data: North Carolina 2026 flat rate', STATE_TAX.find((x) => x.code === 'NC').flatRate, 3.99, 0.001);
 chk('data: Indiana 2026 flat rate', STATE_TAX.find((x) => x.code === 'IN').flatRate, 2.95, 0.001);

@@ -163,11 +163,40 @@ flagged in the row note as pending a Department of Revenue check.
 Where a state uses personal exemptions this model applies none, so tax is
 slightly **overstated** at low incomes in IL, IN and MI. Now stated in each note.
 
+### 9 no-wage-tax states — DONE, checked 2026-08-31
+
+Confirmed none taxes wage income. Three notes were out of date:
+
+- **New Hampshire** — the interest and dividends tax was **fully repealed
+  effective 1 January 2025**, so NH now levies no individual income tax at all.
+  The seed still described it as being phased out.
+- **Washington** — SB 5813 (May 2025) replaced the flat 7% capital gains excise
+  tax with a **graduated** structure, adding a higher rate above $1 million.
+- **Tennessee** — Hall tax phased out in 2021. Already correct.
+
+**A modelling gap this surfaced.** Washington has no wage tax but does tax
+long-term capital gains above roughly $270,000. The capital gains calculator
+treats `kind: 'none'` states as having no state tax, so it was reporting **$0**
+for a Washington resident who genuinely owes 7%+. Reporting zero there is not a
+simplification, it is wrong.
+
+Rather than silently leave it, the model now sets `untaxedGainCaveat` when a
+no-wage-tax state nonetheless taxes gains, and the page says the state figure is
+understated instead of implying nil. Driven off the row note rather than a
+hardcoded state code, so it will catch the next state to do this.
+
+Computing Washington's tax properly needs its own bracket data and threshold —
+worth doing, and out of scope for confirming the nine.
+
 ### Still outstanding
 
-1. **9 no-tax states** — structurally certain; needs confirming none has
-   introduced a wage tax.
-2. **28 graduated states** — the real work, against primary sources.
+**28 graduated states** — the real work, against primary sources. The
+consolidated tables are a 2025 vintage and give only top rates, and their
+deduction columns have already proved unreliable once.
+
+Also outstanding: the eight states where married brackets are approximated by
+the single table (DE, DC, MD, NJ, NY, ND, VT, WI), which **overstates** their
+tax.
 
 Also outstanding, and arguably more important than bracket precision: the eight
 states where married brackets are approximated by the single table (DE, DC, MD,
