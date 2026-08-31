@@ -245,6 +245,15 @@ chk('data: social security wage base', FEDERAL.fica.socialSecurityWageBase, 184_
 chk('data: capital gains 0% ceiling, single', CAP_GAINS.brackets.single[0].upTo, 49_450, 0);
 chk('data: capital gains 15% ceiling, married', CAP_GAINS.brackets.married[1].upTo, 613_700, 0);
 chk('data: child tax credit', CREDITS.childTaxCredit, 2_200, 0);
+chk('data: 14 single-rate states are verified', STATE_TAX.filter((x) => x.kind === 'flat' && x.verified).length, 14, 0);
+chk('data: North Carolina 2026 flat rate', STATE_TAX.find((x) => x.code === 'NC').flatRate, 3.99, 0.001);
+chk('data: Indiana 2026 flat rate', STATE_TAX.find((x) => x.code === 'IN').flatRate, 2.95, 0.001);
+chk('data: Mississippi 2026 flat rate', STATE_TAX.find((x) => x.code === 'MS').flatRate, 4.00, 0.001);
+chk('data: Kentucky 2026 flat rate', STATE_TAX.find((x) => x.code === 'KY').flatRate, 3.50, 0.001);
+chk('data: federal-conforming states track the federal deduction',
+  ['CO', 'ID', 'IA'].every((c) => STATE_TAX.find((x) => x.code === c).standardDeduction.single === FEDERAL.single.standardDeduction) ? 1 : 0, 1, 0);
+chk('data: no-deduction states stay at zero',
+  ['IL', 'MI', 'PA'].every((c) => STATE_TAX.find((x) => x.code === c).standardDeduction.single === 0) ? 1 : 0, 1, 0);
 chk('data: sales tax rows carry provenance', SALES_TAX.every((x) => x.verified && x.verified.source) ? 1 : 0, 1, 0);
 chk('data: 16 states keep a transaction-count nexus test', SALES_TAX.filter((x) => x.nexusTransactions).length, 16, 0);
 chk('data: Louisiana state sales rate', SALES_TAX.find((x) => x.code === 'LA').stateRate, 5.00, 0.001);

@@ -132,14 +132,42 @@ Full 2026 bracket schedules for the 28 graduated states, from each state's
 department of revenue. There is no consolidated machine-readable source, and
 extracting thirty bracket tables from prose is how errors get introduced.
 
-The tractable order:
+### 14 flat states — DONE, checked 2026-08-31
 
-1. **14 flat states** — one rate and one deduction each. Quick, and covers a
-   quarter of the country.
-2. **9 no-tax states** — already structurally certain; only needs confirming
-   none has introduced a wage tax.
-3. **28 graduated states** — the real work, and the part that should be done
-   against primary sources with a second pair of eyes.
+Rates from **Tax Foundation, State Individual Income Tax Rates and Brackets
+2026**, corroborated against their **State Tax Changes Taking Effect January 1,
+2026** article, which independently names four of the six changes.
+
+Six rates were stale:
+
+| State | Was | 2026 |
+|---|---|---|
+| Idaho | 5.695% | **5.30%** (retroactive to Jan 2025) |
+| Indiana | 3.05% | **2.95%** |
+| Kentucky | 4.00% | **3.50%** |
+| Mississippi | 4.40% | **4.00%** |
+| North Carolina | 4.25% | **3.99%** (final step of the phase-down) |
+| Utah | 4.55% | **4.50%** |
+
+**The standard deduction column of that table was not trustworthy** and was only
+partly applied. It claimed Illinois, Indiana, Michigan and Pennsylvania "conform
+to the federal standard deduction", which is wrong — Pennsylvania allows no
+deduction at all and the other three use personal exemptions. That looks like
+the extraction filling a gap rather than the table saying it.
+
+Applied: CO, ID and IA (genuine federal conformity, tracking the now-verified
+federal figure), plus KY and LA which set their own. **Not applied:** Arizona's
+`$8,350`, which is not a federal figure despite Arizona conforming to federal —
+flagged in the row note as pending a Department of Revenue check.
+
+Where a state uses personal exemptions this model applies none, so tax is
+slightly **overstated** at low incomes in IL, IN and MI. Now stated in each note.
+
+### Still outstanding
+
+1. **9 no-tax states** — structurally certain; needs confirming none has
+   introduced a wage tax.
+2. **28 graduated states** — the real work, against primary sources.
 
 Also outstanding, and arguably more important than bracket precision: the eight
 states where married brackets are approximated by the single table (DE, DC, MD,

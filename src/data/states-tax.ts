@@ -47,7 +47,17 @@ const flat = (
   code, name, slug: name.toLowerCase().replace(/\s+/g, '-'),
   kind: 'flat', flatRate,
   standardDeduction: { single: sd[0], married: sd[1] },
-  localTax, note, verified: false, source: 'seeded estimate — unverified',
+  localTax, note,
+  // Rates checked for all fourteen single-rate states. Deductions checked where
+  // the state sets its own or conforms to the (now verified) federal figure;
+  // the exceptions are named in each row note.
+  verified: {
+    checkedOn: '2026-08-31',
+    source: 'Tax Foundation, State Individual Income Tax Rates and Brackets 2026; ' +
+      'corroborated by State Tax Changes Taking Effect January 1, 2026',
+    by: 'BAMU',
+  },
+  source: 'Tax Foundation 2026 single-rate table — rate verified',
 });
 
 const prog = (
@@ -73,18 +83,18 @@ export const STATE_TAX: StateTax[] = [
   none('NH', 'New Hampshire', 'No tax on wages. Interest and dividends were taxed separately and that tax has been phased out.'),
   none('WA', 'Washington', 'No tax on wages. A separate 7% tax applies to long-term capital gains above a threshold.'),
 
-  flat('AZ', 'Arizona',      2.50, [15_000, 30_000], false, 'Flat rate on Arizona taxable income.'),
-  flat('CO', 'Colorado',     4.40, [15_000, 30_000], false, 'Flat rate; Colorado starts from federal taxable income.'),
-  flat('ID', 'Idaho',        5.695,[15_000, 30_000], false, 'Flat rate on Idaho taxable income.'),
-  flat('IL', 'Illinois',     4.95, [0, 0],           false, 'Flat rate. No standard deduction; a personal exemption applies instead.'),
-  flat('IN', 'Indiana',      3.05, [0, 0],           true,  'Flat state rate, plus a county income tax everywhere in the state.'),
-  flat('KY', 'Kentucky',     4.00, [3_160, 6_320],   true,  'Flat rate; some cities and counties add an occupational tax.'),
-  flat('MI', 'Michigan',     4.25, [0, 0],           true,  'Flat rate; two dozen cities levy their own income tax.'),
-  flat('MS', 'Mississippi',  4.40, [2_300, 4_600],   false, 'Flat rate on income above an exempt amount.'),
-  flat('NC', 'North Carolina', 4.25, [12_750, 25_500], false, 'Flat rate, scheduled to continue stepping down.'),
-  flat('PA', 'Pennsylvania', 3.07, [0, 0],           true,  'Flat rate with no standard deduction. Most municipalities add a local earned income tax.'),
-  flat('UT', 'Utah',         4.55, [0, 0],           false, 'Flat rate; Utah uses a taxpayer tax credit rather than a deduction.'),
-  flat('GA', 'Georgia',      5.19, [12_000, 24_000], false, 'Flat rate, stepping down annually.'),
+  flat('AZ', 'Arizona', 2.50, [15_000, 30_000], false, 'Flat rate on Arizona taxable income. Arizona conforms to the federal standard deduction; the value here follows that conformity and is pending a direct check against the Department of Revenue.'),
+  flat('CO', 'Colorado', 4.40, [16_100, 32_200], false, 'Flat rate; Colorado starts from federal taxable income.'),
+  flat('ID', 'Idaho', 5.30, [16_100, 32_200], false, 'Flat rate on Idaho taxable income.'),
+  flat('IL', 'Illinois', 4.95, [0, 0],           false, 'Flat rate. Illinois allows no standard deduction — it uses a personal exemption instead, which this model does not apply, so tax is slightly overstated at low incomes.'),
+  flat('IN', 'Indiana', 2.95, [0, 0],           true,  'Flat state rate, plus a county income tax everywhere in the state. Indiana uses personal exemptions rather than a standard deduction; not modelled here.'),
+  flat('KY', 'Kentucky', 3.50, [3_360, 3_360],   true,  'Flat rate; some cities and counties add an occupational tax.'),
+  flat('MI', 'Michigan', 4.25, [0, 0],           true,  'Flat rate; two dozen cities levy their own income tax. Michigan uses personal exemptions rather than a standard deduction; not modelled here.'),
+  flat('MS', 'Mississippi', 4.00, [2_300, 4_600],   false, 'Flat rate on income above an exempt amount.'),
+  flat('NC', 'North Carolina', 3.99, [12_750, 25_500], false, 'Flat rate, scheduled to continue stepping down.'),
+  flat('PA', 'Pennsylvania', 3.07, [0, 0],           true,  'Flat rate on gross compensation — Pennsylvania allows no standard deduction and no personal exemption. Most municipalities add a local earned income tax.'),
+  flat('UT', 'Utah', 4.50, [0, 0],           false, 'Flat rate; Utah uses a taxpayer tax credit rather than a deduction.'),
+  flat('GA', 'Georgia', 5.19, [12_000, 24_000], false, 'Flat rate, stepping down annually.'),
 
   prog('AL', 'Alabama', [b(500, 2), b(3_000, 4), b(null, 5)], true, [3_000, 8_500], true,
        'Some municipalities levy an occupational tax on wages.'),
@@ -100,10 +110,10 @@ export const STATE_TAX: StateTax[] = [
        'DC brackets are the same for single and joint filers.'),
   prog('HI', 'Hawaii', [b(9_600, 1.4), b(14_400, 3.2), b(19_200, 5.5), b(24_000, 6.4), b(36_000, 6.8), b(48_000, 7.2), b(125_000, 7.6), b(175_000, 7.9), b(225_000, 8.25), b(275_000, 9), b(325_000, 10), b(null, 11)], true, [4_400, 8_800], false,
        'Hawaii has one of the widest bracket structures in the country.'),
-  flat('IA', 'Iowa',        3.80, [14_600, 29_200], false, 'Iowa completed its move to a single flat rate.'),
+  flat('IA', 'Iowa', 3.80, [16_100, 32_200], false, 'Iowa completed its move to a single flat rate.'),
   prog('KS', 'Kansas', [b(23_000, 5.2), b(null, 5.58)], true, [3_605, 8_240], false,
        'Two brackets following recent consolidation.'),
-  flat('LA', 'Louisiana',   3.00, [12_500, 25_000], false, 'Louisiana moved to a flat rate with a large standard deduction.'),
+  flat('LA', 'Louisiana', 3.00, [12_875, 25_750], false, 'Louisiana moved to a flat rate with a large standard deduction.'),
   prog('ME', 'Maine', [b(26_800, 5.8), b(63_450, 6.75), b(null, 7.15)], true, [15_000, 30_000], false,
        'Standard deduction phases out at higher incomes.'),
   prog('MD', 'Maryland', [b(1_000, 2), b(2_000, 3), b(3_000, 4), b(100_000, 4.75), b(125_000, 5), b(150_000, 5.25), b(250_000, 5.5), b(null, 5.75)], false, [2_700, 5_450], true,
