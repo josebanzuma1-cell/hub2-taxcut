@@ -249,7 +249,29 @@ chk('data: capital gains 0% ceiling, single', CAP_GAINS.brackets.single[0].upTo,
 chk('data: capital gains 15% ceiling, married', CAP_GAINS.brackets.married[1].upTo, 613_700, 0);
 chk('data: child tax credit', CREDITS.childTaxCredit, 2_200, 0);
 chk('data: 9 no-wage-tax states verified', STATE_TAX.filter((x) => x.kind === 'none' && x.verified).length, 9, 0);
-chk('data: 23 of 51 states verified', STATE_TAX.filter((x) => x.verified).length, 23, 0);
+chk('data: all 51 states verified', STATE_TAX.filter((x) => x.verified).length, 51, 0);
+chk('data: 28 graduated states carry bracket provenance',
+  STATE_TAX.filter((x) => x.kind === 'progressive' && x.verified).length, 28, 0);
+// 2026 rate changes worth catching if a future edit reverts them.
+chk('data: Ohio is now a single rate above its zero band', Math.max(...STATE_TAX.find((x) => x.code === 'OH').brackets.map((b) => b.rate)), 2.75, 0.001);
+chk('data: Oklahoma collapsed to four bands', STATE_TAX.find((x) => x.code === 'OK').brackets.length, 4, 0);
+chk('data: Montana top rate', Math.max(...STATE_TAX.find((x) => x.code === 'MT').brackets.map((b) => b.rate)), 5.65, 0.001);
+chk('data: Nebraska top rate', Math.max(...STATE_TAX.find((x) => x.code === 'NE').brackets.map((b) => b.rate)), 4.55, 0.001);
+chk('data: California includes the 13.3% surtax band', Math.max(...STATE_TAX.find((x) => x.code === 'CA').brackets.map((b) => b.rate)), 13.3, 0.001);
+// Structural invariants across every graduated schedule.
+chk('data: every graduated schedule is open-ended at the top',
+  STATE_TAX.filter((x) => x.kind === 'progressive').every((x) => x.brackets.at(-1).upTo === null) ? 1 : 0, 1, 0);
+chk('data: every graduated schedule has ascending thresholds and rates',
+  STATE_TAX.filter((x) => x.kind === 'progressive').every((x) => {
+    let t = 0, r = -1;
+    for (const b of x.brackets) {
+      if (b.upTo !== null && b.upTo <= t) return false;
+      if (b.rate < r) return false;
+      if (b.upTo !== null) t = b.upTo;
+      r = b.rate;
+    }
+    return true;
+  }) ? 1 : 0, 1, 0);
 chk('data: no-tax states charge nothing on wages',
   STATE_TAX.filter((x) => x.kind === 'none').every((x) => compute({ ...base, st: x.code }).stateTax === 0) ? 1 : 0, 1, 0);
 chk('data: 14 single-rate states are verified', STATE_TAX.filter((x) => x.kind === 'flat' && x.verified).length, 14, 0);

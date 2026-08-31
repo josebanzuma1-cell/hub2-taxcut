@@ -188,15 +188,46 @@ hardcoded state code, so it will catch the next state to do this.
 Computing Washington's tax properly needs its own bracket data and threshold —
 worth doing, and out of scope for confirming the nine.
 
+### 28 graduated states — bracket schedules DONE, checked 2026-08-31
+
+Full single-filer schedules from **Tax Foundation, State Individual Income Tax
+Rates and Brackets 2026**, pulled in three batches and validated structurally
+(open-ended top band, ascending thresholds, monotonic rates, plausible range).
+
+Six states already matched the seed exactly — AL, CT, DE, DC, HI, KS — which is
+a useful reliability signal for the rest.
+
+Substantive 2026 changes found:
+
+| State | Change |
+|---|---|
+| Ohio | Moved to a **flat 2.75%** above $26,050. Top rate was 3.5%. |
+| Oklahoma | **Six brackets collapsed into three**, top rate 4.75% → 4.5% |
+| Montana | Top rate 5.9% → **5.65%**, lower band widened to $47,500 |
+| Nebraska | Top rate 5.2% → **4.55%**, mid-phase-down |
+| New York | Lower-bracket rates cut; bottom band now 3.9% |
+| Maryland | **Two new top brackets** added at $500k and $1m |
+| California | Now carries the 13.3% band (the 1% mental health surtax), so the model reports the full rate a Californian pays |
+| AR, ME, MN, MO, NM, OR, RI, SC, VT, WI | Threshold indexation, and SC's top rate 6.2% → 6.0% |
+
+Ohio's move alone changes an $85,000 earner's state tax from about $2,300 to
+**$1,415**.
+
+**Standard deductions were deliberately NOT taken from this source.** Its
+deduction column proved unreliable for the single-rate states — it claimed four
+states conform to the federal standard deduction when they allow none at all —
+so the graduated states' deductions remain seeded. That is the largest
+remaining gap in this hub.
+
 ### Still outstanding
 
-**28 graduated states** — the real work, against primary sources. The
-consolidated tables are a 2025 vintage and give only top rates, and their
-deduction columns have already proved unreliable once.
-
-Also outstanding: the eight states where married brackets are approximated by
-the single table (DE, DC, MD, NJ, NY, ND, VT, WI), which **overstates** their
-tax.
+1. **Standard deductions for the 28 graduated states** — needs a source other
+   than the one whose deduction column already failed once.
+2. **Married brackets in 8 states** (DE, DC, MD, NJ, NY, ND, VT, WI) are
+   approximated by the single table, which **overstates** their tax. Arguably
+   higher value than deduction precision, since it affects every joint filer in
+   those states.
+3. **Washington's capital gains tax** is not computed — see the note above.
 
 Also outstanding, and arguably more important than bracket precision: the eight
 states where married brackets are approximated by the single table (DE, DC, MD,
