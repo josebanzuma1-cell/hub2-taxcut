@@ -12,8 +12,9 @@ const compute = makeCompute(STATE_TAX);
 const base = { gross: 85000, freq: 'biweekly', status: 'single', st: 'CA', k401: 6, health: 2400, hsa: 0, post: 0, extra: 0 };
 
 // --- bracket engine ---
-chk('federal $100k single', taxFromBrackets(100_000, FEDERAL.single.brackets),
-  11925*.10 + (48475-11925)*.12 + (100000-48475)*.22);
+const B = FEDERAL.single.brackets;
+chk('federal $100k single stacks three brackets', taxFromBrackets(100_000, B),
+  B[0].upTo * 0.10 + (B[1].upTo - B[0].upTo) * 0.12 + (100_000 - B[1].upTo) * 0.22);
 chk('marginal 22% at $100k', marginalRate(100_000, FEDERAL.single.brackets), 22);
 
 // --- the wage-base distinction (the point of this model) ---
@@ -209,12 +210,12 @@ chk('W4: balanced when withholding matches liability', Math.abs(w1.difference) <
 
 // The refund case: employer withholds as if no dependents, taxpayer has two kids.
 const kids = w4({ ...wBase, kids: 2 });
-chk('W4: two kids = $4,000 of credit', kids.credits, 4000);
+chk('W4: two kids is twice the child credit', kids.credits, CREDITS.childTaxCredit * 2);
 chk('W4: credits create a refund', kids.isRefund ? 1 : 0, 1, 0);
-chk('W4: refund equals the credits not claimed on the W-4', kids.difference, 4000, 0.01);
-chk('W4: per-paycheck swing', kids.perPaycheckSwing, 4000 / 26, 0.01);
+chk('W4: refund equals the credits not claimed on the W-4', kids.difference, CREDITS.childTaxCredit * 2, 0.01);
+chk('W4: per-paycheck swing', kids.perPaycheckSwing, (CREDITS.childTaxCredit * 2) / 26, 0.01);
 chk('W4: lost interest is positive when over-withheld', kids.lostInterest > 0 ? 1 : 0, 1, 0);
-chk('W4: suggested credits equal the credit total', kids.suggestedCredits, 4000);
+chk('W4: suggested credits equal the credit total', kids.suggestedCredits, CREDITS.childTaxCredit * 2);
 
 // Under-withholding suggests extra per paycheck.
 const under = w4({ ...wBase, held: 5000 });
@@ -224,8 +225,28 @@ chk('W4: suggested extra covers the shortfall', under.suggestedExtra * 26, Math.
 // Credit phase-out
 const phased = w4({ ...wBase, gross: 250000, kids: 2 });
 chk('W4: credits phase out at high income', phased.creditsPhasedOut ? 1 : 0, 1, 0);
-chk('W4: phase-out reduces $50 per $1,000', phased.credits, Math.max(0, 4000 - Math.ceil((250000 - 250000 * 0.06 - 200000) / 1000) * 50), 1);
+chk('W4: phase-out reduces $50 per $1,000', phased.credits,
+  Math.max(0, CREDITS.childTaxCredit * 2 - Math.ceil((250000 - 250000 * 0.06 - CREDITS.phaseOutStart.single) / 1000) * 50), 1);
 chk('W4: zero income is safe', w4({ ...wBase, gross: 0 }).liability, 0);
 
-console.log(`\n${pass} passed, ${fail} failed`);
+// ============ data pinning ============
+// These assert the published figures themselves rather than the arithmetic.
+// They SHOULD fail when the tax year rolls over — that failure is the prompt
+// to re-read the Revenue Procedure, not a bug to route around.
+chk('data: tax year', FEDERAL.year, 2026, 0);
+chk('data: single standard deduction', FEDERAL.single.standardDeduction, 16_100, 0);
+chk('data: married standard deduction', FEDERAL.married.standardDeduction, 32_200, 0);
+chk('data: head of household standard deduction', FEDERAL.head.standardDeduction, 24_150, 0);
+chk('data: top of 12% bracket, single', FEDERAL.single.brackets[1].upTo, 50_400, 0);
+chk('data: top of 12% bracket, married', FEDERAL.married.brackets[1].upTo, 100_800, 0);
+chk('data: 37% starts at, single', FEDERAL.single.brackets[5].upTo, 640_600, 0);
+chk('data: social security wage base', FEDERAL.fica.socialSecurityWageBase, 184_500, 0);
+chk('data: capital gains 0% ceiling, single', CAP_GAINS.brackets.single[0].upTo, 49_450, 0);
+chk('data: capital gains 15% ceiling, married', CAP_GAINS.brackets.married[1].upTo, 613_700, 0);
+chk('data: child tax credit', CREDITS.childTaxCredit, 2_200, 0);
+chk('data: every dataset carries provenance', [FEDERAL, CAP_GAINS, CREDITS, SE_TAX].every((d) => d.verified && d.verified.checkedOn && d.verified.source && d.verified.by) ? 1 : 0, 1, 0);
+
+
+console.log(`
+${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

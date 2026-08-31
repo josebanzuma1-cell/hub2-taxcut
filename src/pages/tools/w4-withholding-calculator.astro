@@ -127,8 +127,8 @@ const related = toolsExcept(tool.slug).slice(0, 3).map((t) => ({
     <div id="w4-notes" style="margin-top:var(--s-5)"></div>
 
     <div style="margin-top:var(--s-5)">
-      <DataNote source="Federal brackets and credit amounts seeded for tax year 2025" verified={false}
-                note="This models annual liability, not the IRS percentage-method tables your employer actually uses per cheque. Use the IRS Tax Withholding Estimator before submitting a new W-4." />
+      <DataNote source="IRS Rev. Proc. 2025-32 (IRB 2025-45), tax year 2026" verified={true}
+                note="Figures verified against the Revenue Procedure. Note this models annual liability, not the IRS percentage-method tables your employer applies per cheque — use the IRS Tax Withholding Estimator before submitting a new W-4." />
     </div>
 
     <section class="prose" style="margin-top:var(--s-7)">
@@ -137,13 +137,13 @@ const related = toolsExcept(tool.slug).slice(0, 3).map((t) => ({
         The most common cause is the simplest: the W-4 on file does not mention
         your dependants. Step 3 of the form is where you claim the child tax
         credit and the credit for other dependants, and it reduces withholding
-        directly — $2,000 per qualifying child, spread across your paychecks.
+        directly — $2,200 per qualifying child, spread across your paychecks.
       </p>
       <p>
         Leave it blank and your employer withholds as though those credits do
         not exist. You still get them, but only when you file, as a lump sum in
-        the following spring. Two children means roughly $4,000 withheld through
-        the year that was never owed — about $154 out of every fortnightly
+        the following spring. Two children means roughly $4,400 withheld through
+        the year that was never owed — about $169 out of every fortnightly
         cheque.
       </p>
       <div class="callout">

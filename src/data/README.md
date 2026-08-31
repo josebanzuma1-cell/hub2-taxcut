@@ -8,16 +8,26 @@ others in the portfolio: a wrong transfer tax misstates an estimate, but a wrong
 bracket misstates somebody's actual filing, and penalties and interest attach to
 underpayment.
 
-## Federal — `federal.ts`
+## Federal — `federal.ts` — VERIFIED, tax year 2026
+
+Checked 2026-08-31 against:
 
 | Field | Source |
 |---|---|
-| brackets, standardDeduction | IRS Revenue Procedure for the tax year |
-| socialSecurityWageBase | Social Security Administration annual announcement |
-| medicareRate, additionalMedicareRate, thresholds | IRS Publication 15 |
+| Rate schedules, standard deduction, capital gains rate amounts, child tax credit | **IRS Rev. Proc. 2025-32** (Internal Revenue Bulletin 2025-45) |
+| Social Security and Medicare rates, wage base | **IRS Topic 751**; **SSA Contribution and Benefit Base** |
+| Additional Medicare and NIIT thresholds | **IRC §3101(b)(2)**, **§1411** — statutory, never indexed |
+| Residence gain exclusion | **IRC §121** — statutory, never indexed |
+| Other-dependent credit, phase-out starts | IRS Child Tax Credit / Credit for Other Dependents |
 
-Re-check every November, when the following year's figures publish. Update
-`year` and set `verified: true` only for figures actually checked.
+Note the head-of-household schedule is not in the IRS newsroom release — it is
+in the Revenue Procedure itself, published as HTML in the Bulletin. The PDF is
+not machine-readable without a renderer; the IRB HTML is.
+
+**Re-check every November**, when the following year's Revenue Procedure
+publishes. `scripts/test-tax.mjs` has a data-pinning block asserting the
+headline figures; it is *designed* to fail on a year rollover, which is the
+prompt to re-read the source rather than a bug to route around.
 
 ## States — `states-tax.ts`
 
