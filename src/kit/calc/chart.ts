@@ -28,6 +28,10 @@ export interface LineChartOpts {
   legend?: boolean;
   /** hover readout — the "drag and watch it move" affordance */
   crosshair?: boolean;
+  /** logarithmic y axis. Correct when series span orders of magnitude — a
+   *  percentile fan around a compounding balance squashes the median flat
+   *  against the axis on a linear scale. Values at or below zero are floored. */
+  logScale?: boolean;
 }
 
 const VB_W = 680;
@@ -68,14 +72,42 @@ export function lineChart(host: HTMLElement, opts: LineChartOpts): void {
   if (opts.zeroBaseline !== false) lo = Math.min(lo, 0);
   if (lo === hi) { hi = lo + 1; }
 
-  const yTicks = ticks(lo, hi);
-  lo = Math.min(lo, yTicks[0]);
-  hi = Math.max(hi, yTicks[yTicks.length - 1]);
-
   const plotW = VB_W - PAD.l - PAD.r;
   const plotH = H - PAD.t - PAD.b;
   const X = (i: number) => PAD.l + (n <= 1 ? plotW / 2 : (i / (n - 1)) * plotW);
-  const Y = (v: number) => PAD.t + plotH - ((v - lo) / (hi - lo)) * plotH;
+
+  let yTicks: number[];
+  let Y: (v: number) => number;
+
+  if (opts.logScale) {
+    // Floor at one order of magnitude below the smallest positive value so a
+    // series that hits zero still has somewhere to sit.
+    const positives = all.filter((v) => v > 0);
+    const smallest = positives.length ? Math.min(...positives) : 1;
+    const top = Math.max(hi, smallest * 10);
+    // Never show more than four decades: a single near-zero path would
+    // otherwise stretch the axis until everything else is a flat line.
+    const floor = Math.max(
+      Math.pow(10, Math.floor(Math.log10(smallest))),
+      Math.pow(10, Math.ceil(Math.log10(top)) - 4),
+    );
+    // Ticks sit on powers of ten, but the axis itself ends at the real maximum
+    // rather than rounding up a full decade and wasting half the plot.
+    yTicks = [];
+    for (let t = Math.pow(10, Math.ceil(Math.log10(floor))); t <= top; t *= 10) yTicks.push(t);
+    const lgLo = Math.log10(floor);
+    const lgHi = Math.log10(top);
+    Y = (v: number) => {
+      const lg = Math.log10(Math.max(v, floor));
+      return PAD.t + plotH - ((lg - lgLo) / (lgHi - lgLo)) * plotH;
+    };
+    lo = floor; hi = top;
+  } else {
+    yTicks = ticks(lo, hi);
+    lo = Math.min(lo, yTicks[0]);
+    hi = Math.max(hi, yTicks[yTicks.length - 1]);
+    Y = (v: number) => PAD.t + plotH - ((v - lo) / (hi - lo)) * plotH;
+  }
 
   const yFmt = opts.yFormat ?? ((v: number) => String(Math.round(v)));
 
@@ -92,11 +124,15 @@ export function lineChart(host: HTMLElement, opts: LineChartOpts): void {
     `<text x="${X(t.at).toFixed(1)}" y="${H - 8}" text-anchor="middle">${esc(t.label)}</text>`
   ).join('');
 
+  // Area fills sit on the axis floor. On a log axis that floor is a positive
+  // number, not zero, so it is computed once here rather than inline twice.
+  const baseY = Y(opts.logScale ? lo : Math.max(lo, 0)).toFixed(1);
+
   const paths = series.map((s) => {
     const pts = s.points.map((v, i) => [X(i), Y(v)] as [number, number]);
     const d = path(pts);
     const area = s.fill
-      ? `<path d="${d}L${X(s.points.length - 1).toFixed(1)} ${Y(Math.max(lo, 0)).toFixed(1)}L${X(0).toFixed(1)} ${Y(Math.max(lo, 0)).toFixed(1)}Z" fill="${s.color}" opacity=".10" stroke="none"/>`
+      ? `<path d="${d}L${X(s.points.length - 1).toFixed(1)} ${baseY}L${X(0).toFixed(1)} ${baseY}Z" fill="${s.color}" opacity=".10" stroke="none"/>`
       : '';
     return `${area}<path d="${d}" stroke="${s.color}"${s.dashed ? ' stroke-dasharray="5 4"' : ''}/>`;
   }).join('');
