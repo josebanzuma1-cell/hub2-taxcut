@@ -26,6 +26,9 @@ export interface StateTax {
   brackets?: Bracket[];
   /** are MFJ brackets exactly double the single brackets? */
   mfjDoubles?: boolean;
+  /** Explicit married-filing-jointly schedule, for states that publish one
+   *  rather than doubling. Takes precedence over mfjDoubles when present. */
+  marriedBrackets?: Bracket[];
   standardDeduction: { single: number; married: number };
   /** counties or cities levy their own income tax on top */
   localTax: boolean;
@@ -72,9 +75,10 @@ const flat = (
 const prog = (
   code: string, name: string, brackets: Bracket[], mfjDoubles: boolean,
   sd: [number, number], localTax: boolean, note: string,
+  marriedBrackets?: Bracket[],
 ): StateTax => ({
   code, name, slug: name.toLowerCase().replace(/\s+/g, '-'),
-  kind: 'progressive', brackets, mfjDoubles,
+  kind: 'progressive', brackets, mfjDoubles, marriedBrackets,
   standardDeduction: { single: sd[0], married: sd[1] },
   localTax, note,
   // Bracket schedules checked for all 28 graduated states. Standard
@@ -124,9 +128,11 @@ export const STATE_TAX: StateTax[] = [
   prog('CT', 'Connecticut', [b(10_000, 2), b(50_000, 4.5), b(100_000, 5.5), b(200_000, 6), b(250_000, 6.5), b(500_000, 6.9), b(null, 6.99)], true, [0, 0], false,
        'Connecticut uses personal exemptions that phase out with income rather than a standard deduction.'),
   prog('DE', 'Delaware', [b(2_000, 0), b(5_000, 2.2), b(10_000, 3.9), b(20_000, 4.8), b(25_000, 5.2), b(60_000, 5.55), b(null, 6.6)], false, [3_250, 6_500], true,
-       'Wilmington levies a city wage tax.'),
+       'Delaware applies the same bracket schedule to single and joint filers, so married couples get no bracket widening. Wilmington levies a city wage tax.',
+       [b(2_000, 0), b(5_000, 2.2), b(10_000, 3.9), b(20_000, 4.8), b(25_000, 5.2), b(60_000, 5.55), b(null, 6.6)]),
   prog('DC', 'District of Columbia', [b(10_000, 4), b(40_000, 6), b(60_000, 6.5), b(250_000, 8.5), b(500_000, 9.25), b(1_000_000, 9.75), b(null, 10.75)], false, [15_000, 30_000], false,
-       'DC brackets are the same for single and joint filers.'),
+       'DC applies the same bracket schedule to single and joint filers, so married couples get no bracket widening.',
+       [b(10_000, 4), b(40_000, 6), b(60_000, 6.5), b(250_000, 8.5), b(500_000, 9.25), b(1_000_000, 9.75), b(null, 10.75)]),
   prog('HI', 'Hawaii', [b(9_600, 1.4), b(14_400, 3.2), b(19_200, 5.5), b(24_000, 6.4), b(36_000, 6.8), b(48_000, 7.2), b(125_000, 7.6), b(175_000, 7.9), b(225_000, 8.25), b(275_000, 9), b(325_000, 10), b(null, 11)], true, [4_400, 8_800], false,
        'Hawaii has one of the widest bracket structures in the country.'),
   flat('IA', 'Iowa', 3.80, [16_100, 32_200], false, 'Iowa completed its move to a single flat rate.'),
@@ -136,7 +142,8 @@ export const STATE_TAX: StateTax[] = [
   prog('ME', 'Maine', [b(27_399, 5.8), b(64_849, 6.75), b(null, 7.15)], true, [15_000, 30_000], false,
        'Standard deduction phases out at higher incomes.'),
   prog('MD', 'Maryland', [b(1_000, 2), b(2_000, 3), b(3_000, 4), b(100_000, 4.75), b(125_000, 5), b(150_000, 5.25), b(250_000, 5.5), b(500_000, 5.75), b(1_000_000, 6.25), b(null, 6.5)], false, [2_700, 5_450], true,
-       'Every Maryland county levies a local income tax of roughly 2.25%–3.20% on top. Not included here.'),
+       'Married brackets diverge from single only above $100,000, so the two match at lower incomes. Every Maryland county levies a local income tax of roughly 2.25%-3.20% on top, which is not included here.',
+       [b(1_000, 2), b(2_000, 3), b(3_000, 4), b(150_000, 4.75), b(175_000, 5), b(225_000, 5.25), b(300_000, 5.5), b(600_000, 5.75), b(1_200_000, 6.25), b(null, 6.5)]),
   prog('MA', 'Massachusetts', [b(1_083_150, 5), b(null, 9)], true, [0, 0], false,
        'Flat 5% plus a 4% surtax on income above $1 million.'),
   prog('MN', 'Minnesota', [b(33_310, 5.35), b(109_430, 6.8), b(203_150, 7.85), b(null, 9.85)], true, [14_950, 29_900], false,
@@ -148,13 +155,16 @@ export const STATE_TAX: StateTax[] = [
   prog('NE', 'Nebraska', [b(4_130, 2.46), b(24_760, 3.51), b(null, 4.55)], true, [8_000, 16_000], false,
        'Nebraska is mid-phase-down; the top rate continues to fall in later years.'),
   prog('NJ', 'New Jersey', [b(20_000, 1.4), b(35_000, 1.75), b(40_000, 3.5), b(75_000, 5.525), b(500_000, 6.37), b(1_000_000, 8.97), b(null, 10.75)], false, [0, 0], false,
-       'New Jersey uses personal exemptions rather than a standard deduction, and has a separate joint-filer table.'),
+       'New Jersey publishes a separate joint-filer table with an extra 2.45% band and much wider ranges — treating it as the single table overstated a married couple’s tax by over $1,200 at $85,000.',
+       [b(20_000, 1.4), b(50_000, 1.75), b(70_000, 2.45), b(80_000, 3.5), b(150_000, 5.53), b(500_000, 6.37), b(1_000_000, 8.97), b(null, 10.75)]),
   prog('NM', 'New Mexico', [b(5_500, 1.5), b(16_500, 3.2), b(33_500, 4.3), b(66_500, 4.7), b(210_000, 4.9), b(null, 5.9)], true, [15_000, 30_000], false,
        'New Mexico follows the federal standard deduction.'),
   prog('NY', 'New York', [b(8_500, 3.9), b(11_700, 4.4), b(13_900, 5.15), b(80_650, 5.4), b(215_400, 5.9), b(1_077_550, 6.85), b(5_000_000, 9.65), b(25_000_000, 10.3), b(null, 10.9)], false, [8_000, 16_050], true,
-       'New York cut its lower-bracket rates for 2026. New York City and Yonkers levy their own income tax on residents, which is not included here.'),
+       'New York cut its lower-bracket rates for 2026. New York City and Yonkers levy their own income tax on residents, which is not included here.',
+       [b(17_150, 3.9), b(23_600, 4.4), b(27_900, 5.15), b(161_550, 5.4), b(323_200, 5.9), b(2_155_350, 6.85), b(5_000_000, 9.65), b(25_000_000, 10.3), b(null, 10.9)]),
   prog('ND', 'North Dakota', [b(48_475, 0), b(244_825, 1.95), b(null, 2.5)], false, [15_000, 30_000], false,
-       'North Dakota has the lowest top rate of any state that taxes wages.'),
+       'North Dakota’s zero-rate band runs to $80,975 for joint filers, so many married couples owe no state income tax at all.',
+       [b(80_975, 0), b(298_075, 1.95), b(null, 2.5)]),
   prog('OH', 'Ohio', [b(26_050, 0), b(null, 2.75)], true, [0, 0], true,
        'Ohio moved to a flat 2.75% on nonbusiness income above $26,050 effective January 2026, so the schedule is now a zero band and a single rate. Most Ohio municipalities levy an income tax of 1%-3% on top, which is not included here.'),
   prog('OK', 'Oklahoma', [b(3_750, 0), b(4_900, 2.5), b(7_200, 3.5), b(null, 4.5)], true, [6_350, 12_700], false,
@@ -166,13 +176,15 @@ export const STATE_TAX: StateTax[] = [
   prog('SC', 'South Carolina', [b(3_640, 0), b(18_230, 3), b(null, 6)], true, [15_000, 30_000], false,
        'South Carolina follows the federal standard deduction.'),
   prog('VT', 'Vermont', [b(49_400, 3.35), b(119_700, 6.6), b(249_700, 7.6), b(null, 8.75)], false, [7_000, 14_050], false,
-       'Vermont has its own joint-filer table.'),
+       'Vermont publishes its own joint-filer table with substantially wider bands.',
+       [b(82_500, 3.35), b(199_450, 6.6), b(304_000, 7.6), b(null, 8.75)]),
   prog('VA', 'Virginia', [b(3_000, 2), b(5_000, 3), b(17_000, 5), b(null, 5.75)], true, [8_500, 17_000], false,
        'Virginia brackets have not been indexed for many years.'),
   prog('WV', 'West Virginia', [b(10_000, 2.22), b(25_000, 2.96), b(40_000, 3.33), b(60_000, 4.44), b(null, 4.82)], true, [0, 0], true,
        'Some municipalities levy a flat city service fee rather than an income tax.'),
   prog('WI', 'Wisconsin', [b(15_110, 3.5), b(51_950, 4.4), b(332_720, 5.3), b(null, 7.65)], false, [13_230, 24_490], false,
-       'Wisconsin has a separate joint-filer table and a phasing standard deduction.'),
+       'Wisconsin publishes its own joint-filer table with wider bands and a phasing standard deduction.',
+       [b(20_150, 3.5), b(69_260, 4.4), b(443_630, 5.3), b(null, 7.65)]),
 ];
 
 export const stateBySlug = (slug: string): StateTax | undefined =>

@@ -232,3 +232,28 @@ remaining gap in this hub.
 Also outstanding, and arguably more important than bracket precision: the eight
 states where married brackets are approximated by the single table (DE, DC, MD,
 NJ, NY, ND, VT, WI), which **overstates** their tax.
+
+## Married brackets — DONE, checked 2026-08-31
+
+All eight states that publish their own joint-filer schedule now carry an
+explicit `marriedBrackets` table: **DE, DC, MD, NJ, NY, ND, VT, WI**. None of
+them was a simple doubling, and New Jersey's has an **extra 2.45% band that
+single filers do not get**.
+
+What the approximation was costing, on $85,000 married:
+
+| State | Was (single table) | Now | Correction |
+|---|---|---|---|
+| New Jersey | $2,811 | **$1,558** | −$1,253 |
+| Vermont | $2,582 | **$2,126** | −$457 |
+| New York | $3,153 | **$2,986** | −$168 |
+| Wisconsin | $2,206 | **$2,151** | −$55 |
+| DE, DC, MD, ND | unchanged at this income | | |
+
+Delaware and DC genuinely apply the *same* schedule to both statuses, which is
+now explicit rather than assumed. Maryland's tables diverge only above $100,000,
+and North Dakota's zero band runs to $80,975 for joint filers — so many married
+couples there owe no state income tax at all.
+
+Both the paycheck and capital gains models prefer an explicit table over the
+doubling shortcut, and `mfjApproximated` is now false for every state.

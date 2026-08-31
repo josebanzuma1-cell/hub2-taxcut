@@ -99,13 +99,15 @@ export function makeCompute(states: StateTax[]) {
     else if (st.kind === 'progressive') {
       const stateSd = status === 'married' ? st.standardDeduction.married : st.standardDeduction.single;
       const stateBase = Math.max(0, income - stateSd);
-      const half = status === 'married' && st.mfjDoubles;
+      const mfjTable = status === 'married' ? st.marriedBrackets : undefined;
+      const table = mfjTable?.length ? mfjTable : (st.brackets ?? []);
+      const half = status === 'married' && !mfjTable?.length && st.mfjDoubles;
       const withGain = half
-        ? taxFromBrackets((stateBase + taxableGain) / 2, st.brackets ?? []) * 2
-        : taxFromBrackets(stateBase + taxableGain, st.brackets ?? []);
+        ? taxFromBrackets((stateBase + taxableGain) / 2, table) * 2
+        : taxFromBrackets(stateBase + taxableGain, table);
       const without = half
-        ? taxFromBrackets(stateBase / 2, st.brackets ?? []) * 2
-        : taxFromBrackets(stateBase, st.brackets ?? []);
+        ? taxFromBrackets(stateBase / 2, table) * 2
+        : taxFromBrackets(stateBase, table);
       stateGainsTax = Math.max(0, withGain - without);
     }
 

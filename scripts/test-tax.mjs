@@ -62,8 +62,34 @@ chk('MFJ shortcut = half income taxed twice',
   joint.stateTax, taxFromBrackets(joint.stateTaxable / 2, mn.brackets) * 2, 0.01);
 chk('MN flagged as doubling', mn.mfjDoubles ? 1 : 0, 1, 0);
 // A non-doubling state must be flagged so the page can say so.
-chk('NY flagged as approximated for MFJ',
-  compute({ ...base, st: 'NY', status: 'married' }).mfjApproximated ? 1 : 0, 1, 0);
+// New York now has an explicit married schedule, so it is no longer
+// approximated. Nor is any other state — that was the point of adding them.
+chk('NY is no longer approximated for MFJ',
+  compute({ ...base, st: 'NY', status: 'married' }).mfjApproximated ? 1 : 0, 0, 0);
+chk('no state approximates married brackets any more',
+  STATE_TAX.filter((x) => compute({ ...base, st: x.code, status: 'married' }).mfjApproximated).length, 0, 0);
+chk('8 states carry an explicit married schedule',
+  STATE_TAX.filter((x) => x.marriedBrackets?.length).length, 8, 0);
+// The whole reason for doing this: approximating overstated their tax.
+chk('NJ married pays less than NJ single at the same income',
+  compute({ ...base, st: 'NJ', status: 'married' }).stateTax < compute({ ...base, st: 'NJ', status: 'single' }).stateTax ? 1 : 0, 1, 0);
+chk('every explicit-table state taxes MFJ at or below single',
+  STATE_TAX.filter((x) => x.marriedBrackets?.length).every((x) =>
+    compute({ ...base, st: x.code, status: 'married' }).stateTax <=
+    compute({ ...base, st: x.code, status: 'single' }).stateTax + 0.01) ? 1 : 0, 1, 0);
+chk('married schedules are structurally sound',
+  STATE_TAX.filter((x) => x.marriedBrackets?.length).every((x) => {
+    const b = x.marriedBrackets;
+    if (b.at(-1).upTo !== null) return false;
+    let t = 0, r = -1;
+    for (const k of b) {
+      if (k.upTo !== null && k.upTo <= t) return false;
+      if (k.rate < r) return false;
+      if (k.upTo !== null) t = k.upTo;
+      r = k.rate;
+    }
+    return true;
+  }) ? 1 : 0, 1, 0);
 chk('MN not flagged as approximated',
   compute({ ...base, st: 'MN', status: 'married' }).mfjApproximated ? 1 : 0, 0, 0);
 

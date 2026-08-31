@@ -68,6 +68,12 @@ export interface PaycheckModel {
 function stateTaxFor(st: StateTax, taxable: number, status: FilingStatus): number {
   if (st.kind === 'none' || taxable <= 0) return 0;
   if (st.kind === 'flat') return taxable * ((st.flatRate ?? 0) / 100);
+  // A published married schedule beats both shortcuts. Eight states have one,
+  // and none of them is a simple doubling — New Jersey's even has an extra
+  // bracket that single filers do not get.
+  if (status === 'married' && st.marriedBrackets?.length) {
+    return taxFromBrackets(taxable, st.marriedBrackets);
+  }
   const brackets = st.brackets ?? [];
   // Where MFJ brackets are double the single table, halve the income, tax it
   // on the single table, and double the result — arithmetically identical and
@@ -134,7 +140,9 @@ export function makeCompute(states: StateTax[]) {
       stateName: st.name,
       stateKind: st.kind,
       stateHasLocalTax: st.localTax,
-      mfjApproximated: status === 'married' && st.kind === 'progressive' && !st.mfjDoubles,
+      mfjApproximated:
+        status === 'married' && st.kind === 'progressive' &&
+        !st.mfjDoubles && !st.marriedBrackets?.length,
     };
   };
 }

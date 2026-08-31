@@ -70,7 +70,9 @@ for (const s of STATE_TAX) {
 }
 
 if (report) {
-  const approx = STATE_TAX.filter((s) => s.kind === 'progressive' && !s.mfjDoubles);
+  // A state is only approximated if it neither doubles nor publishes its own table.
+  const approx = STATE_TAX.filter((s) => s.kind === 'progressive' && !s.mfjDoubles && !s.marriedBrackets?.length);
+  const explicit = STATE_TAX.filter((s) => s.marriedBrackets?.length);
   console.log(`    married brackets approximated in: ${approx.map((s) => s.code).join(', ')}`);
   console.log(`    local income tax not modelled in: ${STATE_TAX.filter((s) => s.localTax).map((s) => s.code).join(', ')}`);
 }
