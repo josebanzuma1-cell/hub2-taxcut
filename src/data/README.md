@@ -73,3 +73,74 @@ their transaction-count test since Wayfair, and more will. Re-check annually.
 exclusion), `CREDITS` (child and other-dependant amounts and phase-out
 starts), and `SE_TAX` (the 92.35% net earnings rate and the SE rates). All
 seeded, all needing the same IRS Revenue Procedure check as the main brackets.
+
+---
+
+# Tier C progress — state tables
+
+## Sales tax — VERIFIED for rates, checked 2026-08-31
+
+State and average local rates come from **Tax Foundation, State and Local Sales
+Tax Rates as of 1 January 2026**. Twenty-six of fifty-one rows were wrong in the
+seed; the material one was **Louisiana's state rate, 4.45% → 5.00%**.
+
+Transaction-count nexus tests were repealed in **Illinois** (Jan 2026),
+**Kentucky** (Aug 2026) and **Utah** (Jul 2025), taking the count from 19 to
+**16**, which matches the published figure.
+
+**Nexus thresholds are secondary-sourced**, unlike the rates, and are flagged as
+such in the row `source`. They decide a legal registration obligation, so
+spot-check against state guidance before anyone relies on them.
+
+## Income tax — NOT VERIFIED, and here is the worklist
+
+The consolidated table available is a **2025 vintage** and gives only the top
+rate and threshold, not full bracket schedules. The calculator computes from
+full brackets, so verifying a top rate does not make the computation verified.
+These rows stay `verified: false`.
+
+Cross-checking the seed against that 2025 table: **39 of 51 agree** on
+structure, top rate and standard deduction. Of the twelve that differ:
+
+**Not errors — resolved:**
+
+| State | Apparent conflict | Resolution |
+|---|---|---|
+| CA | ours 12.3%, theirs 13.3% | Both right. 12.3% is the top bracket; 13.3% adds the 1% mental health surtax above $1m, which this model does not apply. Now stated in the row note. |
+| IA, LA | ours "progressive", theirs "flat" | Both compute identically — they were single-bracket progressive rows. Normalised to `flat` so the page reports the structure correctly. |
+
+**Genuine vintage drift — needs a 2026 source:**
+
+| State | Seed | 2025 table | Note |
+|---|---|---|---|
+| IN | 3.05% | 3.00% | Indiana steps down annually |
+| GA | 5.19% | 5.39% | Georgia steps down; the seed may already be the 2026 figure |
+| KY | $3,160 | $3,270 | standard deduction |
+| AR | $2,340 | $2,410 | standard deduction |
+| NE | $8,000 | $8,600 | standard deduction |
+| OR | $2,745 | $2,800 | standard deduction |
+| RI | $10,550 | $10,900 | standard deduction |
+| VT | $7,000 | $7,400 | standard deduction |
+| WI | $13,230 | $13,560 | standard deduction |
+
+All seven deduction gaps run the same direction, which is the signature of an
+older vintage rather than scattered mistakes.
+
+## What finishing income tax actually needs
+
+Full 2026 bracket schedules for the 28 graduated states, from each state's
+department of revenue. There is no consolidated machine-readable source, and
+extracting thirty bracket tables from prose is how errors get introduced.
+
+The tractable order:
+
+1. **14 flat states** — one rate and one deduction each. Quick, and covers a
+   quarter of the country.
+2. **9 no-tax states** — already structurally certain; only needs confirming
+   none has introduced a wage tax.
+3. **28 graduated states** — the real work, and the part that should be done
+   against primary sources with a second pair of eyes.
+
+Also outstanding, and arguably more important than bracket precision: the eight
+states where married brackets are approximated by the single table (DE, DC, MD,
+NJ, NY, ND, VT, WI), which **overstates** their tax.

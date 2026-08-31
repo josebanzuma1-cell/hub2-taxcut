@@ -178,7 +178,8 @@ const stx = makeST(SALES_TAX);
 const stBase = { amount: 100, st: 'CA', mode: 'add', local: 'avg', sales: 0, txns: 0 };
 
 const t1 = stx(stBase);
-chk('ST: combined = state + local', t1.combinedRate, 7.25 + 1.60, 0.001);
+const CA = SALES_TAX.find((x) => x.code === 'CA');
+chk('ST: combined = state + local', t1.combinedRate, CA.stateRate + CA.avgLocalRate, 0.001);
 chk('ST: adding tax multiplies', t1.tax, 100 * (t1.combinedRate / 100), 0.01);
 chk('ST: total = pre-tax + tax', t1.total, t1.preTax + t1.tax, 0.01);
 
@@ -189,8 +190,8 @@ chk('ST: removing is not naive subtraction', Math.abs(rem.tax - t1.total * (t1.c
 
 chk('ST: no-tax state charges nothing', stx({ ...stBase, st: 'OR' }).tax, 0);
 chk('ST: no-tax state flagged', stx({ ...stBase, st: 'OR' }).noSalesTax ? 1 : 0, 1, 0);
-chk('ST: local=none uses state rate only', stx({ ...stBase, local: 'none' }).combinedRate, 7.25, 0.001);
-chk('ST: local=max uses the ceiling', stx({ ...stBase, local: 'max' }).combinedRate, 7.25 + 4.75, 0.001);
+chk('ST: local=none uses state rate only', stx({ ...stBase, local: 'none' }).combinedRate, CA.stateRate, 0.001);
+chk('ST: local=max uses the ceiling', stx({ ...stBase, local: 'max' }).combinedRate, CA.stateRate + CA.maxLocalRate, 0.001);
 
 // Nexus
 chk('ST: nexus not triggered below threshold', stx({ ...stBase, sales: 50000 }).nexusTriggered ? 1 : 0, 0, 0);
@@ -244,6 +245,10 @@ chk('data: social security wage base', FEDERAL.fica.socialSecurityWageBase, 184_
 chk('data: capital gains 0% ceiling, single', CAP_GAINS.brackets.single[0].upTo, 49_450, 0);
 chk('data: capital gains 15% ceiling, married', CAP_GAINS.brackets.married[1].upTo, 613_700, 0);
 chk('data: child tax credit', CREDITS.childTaxCredit, 2_200, 0);
+chk('data: sales tax rows carry provenance', SALES_TAX.every((x) => x.verified && x.verified.source) ? 1 : 0, 1, 0);
+chk('data: 16 states keep a transaction-count nexus test', SALES_TAX.filter((x) => x.nexusTransactions).length, 16, 0);
+chk('data: Louisiana state sales rate', SALES_TAX.find((x) => x.code === 'LA').stateRate, 5.00, 0.001);
+chk('data: five states levy no state sales tax', SALES_TAX.filter((x) => x.stateRate === 0).length, 5, 0);
 chk('data: every dataset carries provenance', [FEDERAL, CAP_GAINS, CREDITS, SE_TAX].every((d) => d.verified && d.verified.checkedOn && d.verified.source && d.verified.by) ? 1 : 0, 1, 0);
 
 
