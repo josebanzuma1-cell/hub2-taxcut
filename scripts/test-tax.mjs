@@ -8,6 +8,7 @@ const chk = (n, a, e, t = 0.5) => {
   const ok = Math.abs(a - e) <= t; ok ? pass++ : fail++;
   console.log(`${ok ? 'PASS' : 'FAIL'}  ${n}${ok ? '' : `\n      got ${a} expected ~${e}`}`);
 };
+const ok = (n, cond) => chk(n, cond ? 1 : 0, 1, 0);
 const compute = makeCompute(STATE_TAX);
 const base = { gross: 85000, freq: 'biweekly', status: 'single', st: 'CA', k401: 6, health: 2400, hsa: 0, post: 0, extra: 0 };
 
@@ -316,6 +317,42 @@ chk('data: five states levy no state sales tax', SALES_TAX.filter((x) => x.state
 chk('data: every dataset carries provenance', [FEDERAL, CAP_GAINS, CREDITS, SE_TAX].every((d) => d.verified && d.verified.checkedOn && d.verified.source && d.verified.by) ? 1 : 0, 1, 0);
 
 
+
+/* Standard deductions, checked state by state against each revenue department
+   on 2026-09-01. Pinned because the previous set had drifted a whole vintage
+   without anything failing — every one of these was wrong before. */
+const sd = (c) => STATE_TAX.find((s) => s.code === c).standardDeduction;
+chk('sd: Arkansas 2026', sd('AR').single, 2_470, 0);
+chk('sd: Oregon 2026', sd('OR').single, 2_910, 0);
+chk('sd: Oregon married 2026', sd('OR').married, 5_820, 0);
+chk('sd: Rhode Island 2026', sd('RI').single, 11_200, 0);
+chk('sd: Wisconsin 2026 maximum', sd('WI').single, 13_960, 0);
+chk('sd: Maine 2026', sd('ME').single, 15_300, 0);
+chk('sd: Kentucky 2026', sd('KY').single, 3_360, 0);
+
+/* The conforming states must DERIVE from the federal figure, never copy it.
+   Five of them had been left on the 2025 amount while three were updated by
+   hand — the copies are what drifted. */
+for (const c of ['AZ', 'CO', 'ID', 'IA', 'MT', 'ND']) {
+  chk(`sd: ${c} tracks the federal single deduction`, sd(c).single, FEDERAL.single.standardDeduction, 0);
+  chk(`sd: ${c} tracks the federal married deduction`, sd(c).married, FEDERAL.married.standardDeduction, 0);
+}
+ok('sd: no conforming state is stranded on the old federal figure',
+  ['AZ', 'CO', 'ID', 'IA', 'MT', 'ND'].every((c) => sd(c).single !== 15_000));
+
+/* South Carolina rewrote its schedule for 2026 (H. 4216). The published
+   formula above $30,000 is "5.21% minus $966"; that is the same thing as a
+   5.21% marginal rate, and the two pieces must meet exactly at $30,000. */
+const sc = STATE_TAX.find((s) => s.code === 'SC');
+chk('sc: two brackets, not three', sc.brackets.length, 2, 0);
+chk('sc: lower rate', sc.brackets[0].rate, 1.99, 0.001);
+chk('sc: upper rate', sc.brackets[1].rate, 5.21, 0.001);
+chk('sc: the published formula meets the bracket at $30,000',
+  0.0521 * 30_000 - 966, 0.0199 * 30_000, 1);
+
+// Nebraska is the one row still unverified, and has to admit it.
+ok('sd: Nebraska still flags its deduction as unverified',
+  /NOT verified/.test(STATE_TAX.find((s) => s.code === 'NE').note));
 console.log(`
 ${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

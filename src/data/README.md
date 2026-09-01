@@ -126,6 +126,66 @@ structure, top rate and standard deduction. Of the twelve that differ:
 All seven deduction gaps run the same direction, which is the signature of an
 older vintage rather than scattered mistakes.
 
+## Standard deductions — DONE, checked 2026-09-01
+
+Each against the state's own revenue department. The README previously noted
+seven gaps "all running the same direction, which is the signature of an older
+vintage rather than scattered mistakes". That read was right, and the pass
+found more than seven.
+
+| State | Was | 2026 | Source |
+|---|---|---|---|
+| Arkansas | 2,340 | **2,470** | DFA |
+| Oregon | 2,745 / 5,495 | **2,910 / 5,820** | DOR withholding formulas |
+| Rhode Island | 10,550 / 21,150 | **11,200 / 22,400** | ADV 2025-22 inflation adjustments |
+| Wisconsin | 13,230 / 24,490 | **13,960 / 25,840** | 2026 Form 1-ES schedules |
+| Maine | 15,000 / 30,000 | **15,300 / 30,600** | MRS 2026 rate schedules |
+| Vermont | 7,000 / 14,050 | **7,650 / 15,300** | 2025 figure — 2026 not yet published |
+| Kentucky | 3,360 | 3,360 ✓ | already correct |
+
+### The systematic bug: copies drift, references do not
+
+Eight states have no standard deduction of their own — they conform to the
+federal figure or begin from federal taxable income. All eight had it
+**hand-copied**, and five were stranded on the 2025 amount (15,000 / 30,000)
+while three had been updated to 2026 by hand. Nothing failed, because nothing
+compared them.
+
+They now derive from `FEDERAL` through a `FED_SD` constant: AZ, CO, ID, IA,
+MT, ND. A test asserts each tracks the federal figure, so the next federal
+update carries them along and a re-introduced literal fails.
+
+### South Carolina rewrote its income tax
+
+**H. 4216, signed 30 March 2026**, effective for tax year 2026. This was found
+while checking the deduction and is much larger than a deduction change:
+
+- Federal **AGI**, not federal taxable income, is now the starting point.
+- The federal standard deduction is replaced by the **South Carolina Income
+  Adjusted Deduction** — 15,000 single / 30,000 joint, reducible at higher
+  incomes.
+- **Three brackets became two**: 1.99% under $30,000, then 5.21%. The state
+  publishes the upper piece as "5.21% minus $966", which is the same thing as
+  a 5.21% marginal rate — 1.99% x 30,000 and 0.0521 x 30,000 - 966 both come
+  to $597, so the pieces meet exactly. There is a test for that identity.
+
+The old row carried three brackets and a note asserting South Carolina
+"follows the federal standard deduction", which had become false.
+
+### Still outstanding
+
+**Nebraska.** Its 2026 standard deduction was not published in an accessible
+form when this was checked — the withholding tables use allowances rather than
+the deduction, and the rate chronology PDF does not extract. The row keeps its
+2025-vintage figure and its note says plainly that the figure is not verified.
+Check the 2026 Form 1040N booklet when it appears.
+
+### Caveats now stated on the affected rows
+
+Maine and Wisconsin both **phase their deduction out** as income rises —
+Wisconsin to zero at $136,453 single. This model applies the full amount, so
+it understates tax for high earners in both. Each row says so.
+
 ## What finishing income tax actually needs
 
 Full 2026 bracket schedules for the 28 graduated states, from each state's

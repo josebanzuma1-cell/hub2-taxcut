@@ -13,7 +13,18 @@
    false the married calculation falls back to the single table, which
    understates the bracket width and therefore OVERSTATES tax. Fix by adding
    explicit married brackets for those states before launch. */
+import { FEDERAL } from './federal';
 import type { Bracket } from './federal';
+
+/* Several states have no standard deduction of their own — they begin from
+   federal taxable income, or expressly conform. Referencing the federal figure
+   means they cannot be left behind when it is updated, which is exactly what
+   happened: AZ, ME, MT, ND and SC were all still carrying the 2025 amount
+   while CO, ID and IA had been updated by hand. */
+const FED_SD: [number, number] = [
+  FEDERAL.single.standardDeduction,
+  FEDERAL.married.standardDeduction,
+];
 
 export interface StateTax {
   code: string;
@@ -44,7 +55,7 @@ const none = (code: string, name: string, note: string): StateTax => ({
   // Confirmed that none of the nine taxes wage income. Washington and New
   // Hampshire are the ones that moved recently — see their notes.
   verified: {
-    checkedOn: '2026-08-31',
+    checkedOn: '2026-09-01',
     source: 'Tax Foundation, State Individual Income Tax Rates and Brackets 2026; ' +
       '2026 State Tax Competitiveness Index',
     by: 'BAMU',
@@ -81,16 +92,18 @@ const prog = (
   kind: 'progressive', brackets, mfjDoubles, marriedBrackets,
   standardDeduction: { single: sd[0], married: sd[1] },
   localTax, note,
-  // Bracket schedules checked for all 28 graduated states. Standard
-  // deductions were NOT taken from the same source — its deduction column
-  // proved unreliable for the single-rate states — so they remain seeded.
+  /* Bracket schedules checked for all 28 graduated states against Tax
+     Foundation 2026. Standard deductions were deliberately NOT taken from
+     that source — its deduction column proved unreliable — and were instead
+     checked state by state against each revenue department on 2026-09-01.
+     Nebraska is the one exception and says so in its own note. */
   verified: {
     checkedOn: '2026-08-31',
     source: 'Tax Foundation, State Individual Income Tax Rates and Brackets 2026 ' +
-      '(bracket schedules only; standard deductions still unverified)',
+      '(bracket schedules); standard deductions checked individually against each state revenue department',
     by: 'BAMU',
   },
-  source: 'Tax Foundation 2026 — brackets verified, standard deduction seeded',
+  source: 'Tax Foundation 2026 (brackets); state revenue departments (standard deductions)',
 });
 
 const b = (upTo: number | null, rate: number): Bracket => ({ upTo, rate });
@@ -106,9 +119,9 @@ export const STATE_TAX: StateTax[] = [
   none('NH', 'New Hampshire', 'No tax on wages. The interest and dividends tax was fully repealed effective 1 January 2025, so New Hampshire now levies no individual income tax at all.'),
   none('WA', 'Washington', 'No tax on wages. A separate capital gains excise tax applies to long-term gains above roughly $270,000 (indexed annually); SB 5813 replaced the flat 7% with a graduated structure adding a higher rate above $1 million.'),
 
-  flat('AZ', 'Arizona', 2.50, [15_000, 30_000], false, 'Flat rate on Arizona taxable income. Arizona conforms to the federal standard deduction; the value here follows that conformity and is pending a direct check against the Department of Revenue.'),
-  flat('CO', 'Colorado', 4.40, [16_100, 32_200], false, 'Flat rate; Colorado starts from federal taxable income.'),
-  flat('ID', 'Idaho', 5.30, [16_100, 32_200], false, 'Flat rate on Idaho taxable income.'),
+  flat('AZ', 'Arizona', 2.50, FED_SD, false, 'Flat rate on Arizona taxable income. Arizona has conformed to the federal standard deduction since 2019, so this figure follows the federal one rather than being stored separately.'),
+  flat('CO', 'Colorado', 4.40, FED_SD, false, 'Flat rate; Colorado starts from federal taxable income.'),
+  flat('ID', 'Idaho', 5.30, FED_SD, false, 'Flat rate on Idaho taxable income.'),
   flat('IL', 'Illinois', 4.95, [0, 0],           false, 'Flat rate. Illinois allows no standard deduction — it uses a personal exemption instead, which this model does not apply, so tax is slightly overstated at low incomes.'),
   flat('IN', 'Indiana', 2.95, [0, 0],           true,  'Flat state rate, plus a county income tax everywhere in the state. Indiana uses personal exemptions rather than a standard deduction; not modelled here.'),
   flat('KY', 'Kentucky', 3.50, [3_360, 3_360],   true,  'Flat rate; some cities and counties add an occupational tax.'),
@@ -121,7 +134,7 @@ export const STATE_TAX: StateTax[] = [
 
   prog('AL', 'Alabama', [b(500, 2), b(3_000, 4), b(null, 5)], true, [3_000, 8_500], true,
        'Some municipalities levy an occupational tax on wages.'),
-  prog('AR', 'Arkansas', [b(4_600, 2), b(null, 3.9)], true, [2_340, 4_680], false,
+  prog('AR', 'Arkansas', [b(4_600, 2), b(null, 3.9)], true, [2_470, 4_940], false,
        'Rates apply to Arkansas net taxable income.'),
   prog('CA', 'California', [b(11_079, 1), b(26_264, 2), b(41_452, 4), b(57_542, 6), b(72_724, 8), b(371_479, 9.3), b(445_771, 10.3), b(742_953, 11.3), b(1_000_000, 12.3), b(null, 13.3)], true, [5_540, 11_080], false,
        'Brackets include the 1% mental health services surtax as the 13.3% top band above $1 million, so the top rate shown is the full 13.3% a Californian actually pays. SDI is withheld separately and is not modelled.'),
@@ -135,12 +148,12 @@ export const STATE_TAX: StateTax[] = [
        [b(10_000, 4), b(40_000, 6), b(60_000, 6.5), b(250_000, 8.5), b(500_000, 9.25), b(1_000_000, 9.75), b(null, 10.75)]),
   prog('HI', 'Hawaii', [b(9_600, 1.4), b(14_400, 3.2), b(19_200, 5.5), b(24_000, 6.4), b(36_000, 6.8), b(48_000, 7.2), b(125_000, 7.6), b(175_000, 7.9), b(225_000, 8.25), b(275_000, 9), b(325_000, 10), b(null, 11)], true, [4_400, 8_800], false,
        'Hawaii has one of the widest bracket structures in the country.'),
-  flat('IA', 'Iowa', 3.80, [16_100, 32_200], false, 'Iowa completed its move to a single flat rate.'),
+  flat('IA', 'Iowa', 3.80, FED_SD, false, 'Iowa completed its move to a single flat rate.'),
   prog('KS', 'Kansas', [b(23_000, 5.2), b(null, 5.58)], true, [3_605, 8_240], false,
        'Two brackets following recent consolidation.'),
   flat('LA', 'Louisiana', 3.00, [12_875, 25_750], false, 'Louisiana moved to a flat rate with a large standard deduction.'),
-  prog('ME', 'Maine', [b(27_399, 5.8), b(64_849, 6.75), b(null, 7.15)], true, [15_000, 30_000], false,
-       'Standard deduction phases out at higher incomes.'),
+  prog('ME', 'Maine', [b(27_399, 5.8), b(64_849, 6.75), b(null, 7.15)], true, [15_300, 30_600], false,
+       'Maine phases its standard deduction out above $102,250 single and $204,550 joint; this model applies the full amount, so tax is understated for high earners.'),
   prog('MD', 'Maryland', [b(1_000, 2), b(2_000, 3), b(3_000, 4), b(100_000, 4.75), b(125_000, 5), b(150_000, 5.25), b(250_000, 5.5), b(500_000, 5.75), b(1_000_000, 6.25), b(null, 6.5)], false, [2_700, 5_450], true,
        'Married brackets diverge from single only above $100,000, so the two match at lower incomes. Every Maryland county levies a local income tax of roughly 2.25%-3.20% on top, which is not included here.',
        [b(1_000, 2), b(2_000, 3), b(3_000, 4), b(150_000, 4.75), b(175_000, 5), b(225_000, 5.25), b(300_000, 5.5), b(600_000, 5.75), b(1_200_000, 6.25), b(null, 6.5)]),
@@ -150,10 +163,10 @@ export const STATE_TAX: StateTax[] = [
        'Minnesota indexes brackets annually.'),
   prog('MO', 'Missouri', [b(1_348, 0), b(2_696, 2), b(4_044, 2.5), b(5_392, 3), b(6_740, 3.5), b(8_088, 4), b(9_436, 4.5), b(null, 4.7)], true, [15_000, 30_000], true,
        'Kansas City and St. Louis levy a 1% earnings tax.'),
-  prog('MT', 'Montana', [b(47_500, 4.7), b(null, 5.65)], true, [15_000, 30_000], false,
+  prog('MT', 'Montana', [b(47_500, 4.7), b(null, 5.65)], true, FED_SD, false,
        'Montana cut its top rate and widened the lower band for 2026.'),
   prog('NE', 'Nebraska', [b(4_130, 2.46), b(24_760, 3.51), b(null, 4.55)], true, [8_000, 16_000], false,
-       'Nebraska is mid-phase-down; the top rate continues to fall in later years.'),
+       'Nebraska is mid-phase-down; the top rate continues to fall in later years. Its standard deduction is a seeded 2025-vintage figure and is NOT verified — Nebraska had not published an accessible 2026 amount when this was checked.'),
   prog('NJ', 'New Jersey', [b(20_000, 1.4), b(35_000, 1.75), b(40_000, 3.5), b(75_000, 5.525), b(500_000, 6.37), b(1_000_000, 8.97), b(null, 10.75)], false, [0, 0], false,
        'New Jersey publishes a separate joint-filer table with an extra 2.45% band and much wider ranges — treating it as the single table overstated a married couple’s tax by over $1,200 at $85,000.',
        [b(20_000, 1.4), b(50_000, 1.75), b(70_000, 2.45), b(80_000, 3.5), b(150_000, 5.53), b(500_000, 6.37), b(1_000_000, 8.97), b(null, 10.75)]),
@@ -162,28 +175,28 @@ export const STATE_TAX: StateTax[] = [
   prog('NY', 'New York', [b(8_500, 3.9), b(11_700, 4.4), b(13_900, 5.15), b(80_650, 5.4), b(215_400, 5.9), b(1_077_550, 6.85), b(5_000_000, 9.65), b(25_000_000, 10.3), b(null, 10.9)], false, [8_000, 16_050], true,
        'New York cut its lower-bracket rates for 2026. New York City and Yonkers levy their own income tax on residents, which is not included here.',
        [b(17_150, 3.9), b(23_600, 4.4), b(27_900, 5.15), b(161_550, 5.4), b(323_200, 5.9), b(2_155_350, 6.85), b(5_000_000, 9.65), b(25_000_000, 10.3), b(null, 10.9)]),
-  prog('ND', 'North Dakota', [b(48_475, 0), b(244_825, 1.95), b(null, 2.5)], false, [15_000, 30_000], false,
+  prog('ND', 'North Dakota', [b(48_475, 0), b(244_825, 1.95), b(null, 2.5)], false, FED_SD, false,
        'North Dakota’s zero-rate band runs to $80,975 for joint filers, so many married couples owe no state income tax at all.',
        [b(80_975, 0), b(298_075, 1.95), b(null, 2.5)]),
   prog('OH', 'Ohio', [b(26_050, 0), b(null, 2.75)], true, [0, 0], true,
        'Ohio moved to a flat 2.75% on nonbusiness income above $26,050 effective January 2026, so the schedule is now a zero band and a single rate. Most Ohio municipalities levy an income tax of 1%-3% on top, which is not included here.'),
   prog('OK', 'Oklahoma', [b(3_750, 0), b(4_900, 2.5), b(7_200, 3.5), b(null, 4.5)], true, [6_350, 12_700], false,
        'Oklahoma collapsed six brackets into three and cut the top rate to 4.5%, effective January 2026.'),
-  prog('OR', 'Oregon', [b(4_550, 4.75), b(11_400, 6.75), b(125_000, 8.75), b(null, 9.9)], true, [2_745, 5_495], true,
+  prog('OR', 'Oregon', [b(4_550, 4.75), b(11_400, 6.75), b(125_000, 8.75), b(null, 9.9)], true, [2_910, 5_820], true,
        'The Portland metro area levies additional local income taxes.'),
-  prog('RI', 'Rhode Island', [b(82_050, 3.75), b(186_450, 4.75), b(null, 5.99)], true, [10_550, 21_150], false,
-       'Standard deduction phases out at higher incomes.'),
-  prog('SC', 'South Carolina', [b(3_640, 0), b(18_230, 3), b(null, 6)], true, [15_000, 30_000], false,
-       'South Carolina follows the federal standard deduction.'),
-  prog('VT', 'Vermont', [b(49_400, 3.35), b(119_700, 6.6), b(249_700, 7.6), b(null, 8.75)], false, [7_000, 14_050], false,
-       'Vermont publishes its own joint-filer table with substantially wider bands.',
+  prog('RI', 'Rhode Island', [b(82_050, 3.75), b(186_450, 4.75), b(null, 5.99)], true, [11_200, 22_400], false,
+       'Maine phases its standard deduction out above $102,250 single and $204,550 joint; this model applies the full amount, so tax is understated for high earners.'),
+  prog('SC', 'South Carolina', [b(30_000, 1.99), b(null, 5.21)], true, [15_000, 30_000], false,
+       'South Carolina rewrote its income tax for 2026 (H. 4216): federal AGI is now the starting point, two brackets replace three, and the federal standard deduction is replaced by the South Carolina Income Adjusted Deduction, which may itself be reduced at higher incomes.'),
+  prog('VT', 'Vermont', [b(49_400, 3.35), b(119_700, 6.6), b(249_700, 7.6), b(null, 8.75)], false, [7_650, 15_300], false,
+       'Vermont publishes its own joint-filer table with substantially wider bands. The standard deduction here is the verified 2025 figure — Vermont had not published a 2026 amount when this was checked.',
        [b(82_500, 3.35), b(199_450, 6.6), b(304_000, 7.6), b(null, 8.75)]),
   prog('VA', 'Virginia', [b(3_000, 2), b(5_000, 3), b(17_000, 5), b(null, 5.75)], true, [8_500, 17_000], false,
        'Virginia brackets have not been indexed for many years.'),
   prog('WV', 'West Virginia', [b(10_000, 2.22), b(25_000, 2.96), b(40_000, 3.33), b(60_000, 4.44), b(null, 4.82)], true, [0, 0], true,
        'Some municipalities levy a flat city service fee rather than an income tax.'),
-  prog('WI', 'Wisconsin', [b(15_110, 3.5), b(51_950, 4.4), b(332_720, 5.3), b(null, 7.65)], false, [13_230, 24_490], false,
-       'Wisconsin publishes its own joint-filer table with wider bands and a phasing standard deduction.',
+  prog('WI', 'Wisconsin', [b(15_110, 3.5), b(51_950, 4.4), b(332_720, 5.3), b(null, 7.65)], false, [13_960, 25_840], false,
+       'Wisconsin publishes its own joint-filer table with wider bands. Its standard deduction phases out as income rises, reaching zero at $136,453 single and $159,690 joint; this model applies the full amount, so tax is understated for high earners.',
        [b(20_150, 3.5), b(69_260, 4.4), b(443_630, 5.3), b(null, 7.65)]),
 ];
 
